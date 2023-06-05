@@ -1,0 +1,44 @@
+#delimit;
+clear;
+set more off;
+
+local logdate = string( d(`c(current_date)'), "%dN.D.Y" );
+
+include includes/data_locations.doi;
+
+log using logs/04_imputation_`logdate'.log, t replace;
+
+local numimpute 15;
+
+use `data'recode_person;
+
+mi set mlong;
+mi register imputed sp_race_red sp_educ_red sp_employed_red;
+mi impute chained (mlogit) sp_race_red  sp_educ_red  sp_employed_red=i.age2 i.race_red i.educ_red employed i.sp_age2 i.region i.marr_cohab i.income i.rec_time parents , add(`numimpute') rseed(2230) replace;
+
+
+	replace imp_race_couple=1 if race_red==1 & sp_race_red==1 ;
+	replace imp_race_couple=2 if ((race_red!=1 & sp_race_red==1) | (race_red == 1 & sp_race_red !=1)) & sp_race_red!=.;
+	replace imp_race_couple=3 if race_red !=1 & sp_race_red !=1 & sp_race_red!=.;
+
+	replace imp_educ_couple=1 if educ_red >=3 & sp_educ_red >=3 & sp_educ_red!=.;
+	replace imp_educ_couple=2 if ((educ_red >=3 & sp_educ_red <3) | (educ_red <3 & sp_educ_red >=3)) & sp_educ_red!=.;
+	replace imp_educ_couple=3 if educ_red <3 & sp_educ_red <3 & sp_educ_red!=.;
+
+	replace imp_empstat_couple=1 if employed==1 & sp_employed_red==1;
+	replace imp_empstat_couple=2 if (employed==1 & sp_employed_red==0) | (employed==0 & sp_employed_red==1);
+	replace imp_empstat_couple=3 if employed==0 & sp_employed_red==0 & sp_employed_red!=. ;
+
+
+assert imp_race_couple!=3 if race_red==1;
+assert imp_race_couple!=1 if race_red!=1;
+
+tab imp_race_couple, gen(dimp_race_couple);
+tab imp_educ_couple, gen(dimp_educ_couple);
+tab imp_empstat_couple, gen(dimp_empstat_couple);
+
+sum _all;
+
+save `data'add_imputed, replace;
+
+log close;

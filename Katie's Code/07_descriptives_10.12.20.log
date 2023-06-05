@@ -1,0 +1,2075 @@
+--------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /pkg/ipumsi-personal/katie/research/tt_ss_law/analysis/logs/07_descriptives_10.12.20.log
+  log type:  text
+ opened on:  12 Oct 2020, 12:19:03
+
+. include includes/data_locations.doi;
+
+. #delimit;
+delimiter now ;
+. /*data locations*/
+> local data data/;
+
+. 
+. local Table1 1;
+
+. local Table2 1;
+
+. local vars drace1 drace2 drace3 
+>         dage21 dage22 dage23 dage24 dage25
+>         deduc1 deduc2 deduc3
+>         dychild1 dychild2 dychild3
+>         dnchild1 dnchild2 dnchild3 
+>         dincome1 dincome2 dincome3 dincome4 dincome5
+>         dregion1 dregion2 dregion3 dregion4
+>         drec_time1 drec_time2 drec_time3
+>         dmarr_cohab1 dmarr_cohab2
+>         dparent1 dparent2
+>         demp1 demp2
+>         dday_week1 dday_week2
+>         dholiday1 dholiday2
+>         
+>         drace_couple1 drace_couple2 drace_couple3
+>         deduc_couple1 deduc_couple2 deduc_couple3
+>         dempstat_couple1 dempstat_couple2 dempstat_couple3      
+>         
+>         dimp_race_couple1 dimp_race_couple2 dimp_race_couple3
+>         dimp_educ_couple1 dimp_educ_couple2 dimp_educ_couple3
+>         dimp_empstat_couple1 dimp_empstat_couple2 dimp_empstat_couple3
+>         
+>         dsex1 dsex2
+>         marlegal;
+
+. if `Table1'==1 {;
+.         /*1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111*/
+>         /*Generate means from imputed data*/
+> 
+>         use `data'analysis;
+.         mi svyset [pweight = wt06];
+
+      pweight: wt06
+          VCE: linearized
+  Single unit: missing
+     Strata 1: <one>
+         SU 1: <observations>
+        FPC 1: <zero>
+.         tab same_sex3, gen(dsame_sex3);
+
+     same_sex3 |      Freq.     Percent        Cum.
+---------------+-----------------------------------
+        Hetero |    116,176       98.88       98.88
+  Same sex men |        599        0.51       99.39
+Same sex women |        716        0.61      100.00
+---------------+-----------------------------------
+         Total |    117,491      100.00
+.         tab sex, gen(dsex);
+
+                  Sex |      Freq.     Percent        Cum.
+----------------------+-----------------------------------
+                 Male |     56,536       48.12       48.12
+               Female |     60,955       51.88      100.00
+----------------------+-----------------------------------
+                Total |    117,491      100.00
+.         foreach v in `vars' {;
+  2.                 cap confirm var `v';
+  3.                 if !_rc {;
+  4.                         qui mi estimate, vartable: svy: mean `v', over(same_sex3);
+  5.                         matrix a=e(b_mi);
+  6.                         forvalues n = 1/3 {;
+  7.                                 local `v'_`n'=round(a[1,`n'],.001);
+  8.                                 };
+  9.                         };
+ 10.                 else {;
+ 11.                         disp "`v' is missing!";
+ 12.                         };
+ 13.                 };
+.         tab same_sex3, matcell(x);
+
+     same_sex3 |      Freq.     Percent        Cum.
+---------------+-----------------------------------
+        Hetero |    116,176       98.88       98.88
+  Same sex men |        599        0.51       99.39
+Same sex women |        716        0.61      100.00
+---------------+-----------------------------------
+         Total |    117,491      100.00
+.         forvalues n = 1/3 {;
+  2.                 local N`n'=x[`n',1];
+  3.                 };
+.         tab same_sex3 if marlegal==1, matcell(x);
+
+     same_sex3 |      Freq.     Percent        Cum.
+---------------+-----------------------------------
+        Hetero |     32,776       98.62       98.62
+  Same sex men |        191        0.57       99.20
+Same sex women |        266        0.80      100.00
+---------------+-----------------------------------
+         Total |     33,233      100.00
+.         forvalues n = 1/3 {;
+  2.                 local Nmar`n'=x[`n',1];
+  3.                 };
+.         tab same_sex3 if marlegal==0, matcell(x);
+
+     same_sex3 |      Freq.     Percent        Cum.
+---------------+-----------------------------------
+        Hetero |     83,400       98.98       98.98
+  Same sex men |        408        0.48       99.47
+Same sex women |        450        0.53      100.00
+---------------+-----------------------------------
+         Total |     84,258      100.00
+.         forvalues n = 1/3 {;
+  2.                 local Nnmar`n'=x[`n',1];
+  3.                 };
+. /*get N's below*/
+> 
+>         /*2222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222*/
+>         /*Generate means from non-imputed data just for comparison. This is just to convince us that there's nothing wonky with imputation.*/
+> 
+>         clear;
+.         use `data'analysis_no_impute;
+.         svyset [weight=wt06];
+(sampling weights assumed)
+
+      pweight: wt06
+          VCE: linearized
+  Single unit: missing
+     Strata 1: <one>
+         SU 1: <observations>
+        FPC 1: <zero>
+.         foreach v in `vars' {;
+  2.                 cap confirm var `v';
+  3.                 if !_rc {;
+  4.                         qui svy: mean `v', over(same_sex3);
+  5.                         matrix a=e(b);
+  6.                         forvalues n = 1/3 {;
+  7.                                 local `v'_`n'=round(a[1,`n'],.001);
+  8.                                 };
+  9.                         };
+ 10.                 };
+.         disp "var|hetero|ss men|ss women";
+var|hetero|ss men|ss women
+.         foreach v in `vars' {;
+  2.  //hetero, ss men, ss women
+>                 cap confirm var `v';
+  3.                 if !_rc {;
+  4.                         disp "`v'|``v'_1'|``v'_2'|``v'_3'";
+  5.                         };
+  6.                 };
+drace1|.854|.907|.874
+drace2|.08|.057|.063
+drace3|.066|.037|.063
+dage21|.133|.17|.219
+dage22|.238|.277|.238
+dage23|.252|.275|.263
+dage24|.232|.199|.18
+dage25|.145|.078|.099
+deduc1|.096|.065|.035
+deduc2|.541|.412|.438
+deduc3|.363|.523|.527
+dychild1|.476|.416|.387
+dychild2|.372|.326|.464
+dychild3|.152|.258|.149
+dnchild1|.371|.481|.632
+dnchild2|.395|.392|.308
+dnchild3|.234|.127|.06
+dincome1|.113|.094|.135
+dincome2|.417|.266|.43
+dincome3|.304|.389|.293
+dincome4|.112|.236|.114
+dincome5|.054|.015|.028
+dregion1|.173|.179|.168
+dregion2|.246|.218|.22
+dregion3|.359|.323|.305
+dregion4|.222|.28|.307
+drec_time1|.283|.159|.142
+drec_time2|.093|.043|.054
+drec_time3|.624|.798|.804
+dmarr_cohab1|.908|.036|.028
+dmarr_cohab2|.092|.964|.972
+dparent1|.509|.894|.755
+dparent2|.491|.106|.245
+demp1|.245|.129|.203
+demp2|.755|.871|.797
+dday_week1|.716|.6890000000000001|.706
+dday_week2|.284|.311|.294
+dholiday1|.983|.992|.984
+dholiday2|.017|.008|.016
+drace_couple1|.8320000000000001|.834|.848
+drace_couple2|.047|.119|.081
+drace_couple3|.121|.047|.072
+deduc_couple1|.256|.391|.438
+deduc_couple2|.218|.307|.203
+deduc_couple3|.526|.302|.359
+dempstat_couple1|.578|.74|.6980000000000001
+dempstat_couple2|.335|.222|.21
+dempstat_couple3|.087|.038|.092
+marlegal|.355|.502|.529
+.         tab same_sex3, matcell(x);
+
+     same_sex3 |      Freq.     Percent        Cum.
+---------------+-----------------------------------
+        Hetero |     98,671       99.19       99.19
+  Same sex men |        359        0.36       99.55
+Same sex women |        446        0.45      100.00
+---------------+-----------------------------------
+         Total |     99,476      100.00
+.         forvalues n = 1/3 {;
+  2.                 local N`n'=x[`n',1];
+  3.                 };
+.         tab same_sex3 if marlegal==1, matcell(x);
+
+     same_sex3 |      Freq.     Percent        Cum.
+---------------+-----------------------------------
+        Hetero |     27,571       98.79       98.79
+  Same sex men |        146        0.52       99.32
+Same sex women |        191        0.68      100.00
+---------------+-----------------------------------
+         Total |     27,908      100.00
+.         forvalues n = 1/3 {;
+  2.                 local Npar`n'=x[`n',1];
+  3.                 };
+.         tab same_sex3 if marlegal==0, matcell(x);
+
+     same_sex3 |      Freq.     Percent        Cum.
+---------------+-----------------------------------
+        Hetero |     71,100       99.35       99.35
+  Same sex men |        213        0.30       99.64
+Same sex women |        255        0.36      100.00
+---------------+-----------------------------------
+         Total |     71,568      100.00
+.         forvalues n = 1/3 {;
+  2.                 local Nnpar`n'=x[`n',1];
+  3.                 };
+.                 disp "N|`N1'|`N2'|`N3'";
+N|98671|359|446
+.                 disp "Nmar|`Nmar1'|`Nmar2'|`Nmar3'";
+Nmar|32776|191|266
+.                 disp "Nnmar|`Nnmar1'|`Nnmar2'|`Nnmar3'";
+Nnmar|83400|408|450
+.         };
+
+. if `Table2'==1 {;
+.         use `data'analysis;
+.         mi svyset [pweight = wt06];
+
+      pweight: wt06
+          VCE: linearized
+  Single unit: missing
+     Strata 1: <one>
+         SU 1: <observations>
+        FPC 1: <zero>
+.         local tuv_vars w_spouse w_sponly w_spkid total_home total_nothome total_out total_leisure_home total_leisure_nothome total_leisure_out s
+> pouse_home spouse_nothome spouse_out spouse_leisure_home spouse_leisure_nothome spouse_leisure_out;
+.                 foreach v in `tuv_vars' {;
+  2.                 cap confirm var `v';
+  3.                 if !_rc {;
+  4.                         /*qui*/ mi estimate, vartable: svy: mean `v', over(same_sex3 marlegal);
+  5.                         matrix a=e(b_mi);
+  6.                         matrix list a;
+  7.                         forvalues n = 1/6 {;
+  8.                                 local `v'_`n'=round(a[1,`n'],.001);
+  9.                                 };
+ 10.                         };
+ 11.                 else {;
+ 12.                         disp "`v' is missing!";
+ 13.                         };
+ 14.                 };
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Mean estimation
+
+Variance information
+
+------------------------------------------------------------------------------
+             |        Imputation variance                             Relative
+             |    Within   Between     Total       RVI       FMI    efficiency
+-------------+----------------------------------------------------------------
+  c.w_spouse@|
+   same_sex3#|
+    marlegal |
+   Hetero#0  |   1.24725         0   1.24725         0         0             1
+   Hetero#1  |   3.27517         0   3.27517         0         0             1
+Same sex .. #|
+          0  |   360.481         0   360.481         0         0             1
+Same sex .. #|
+          1  |   438.104         0   438.104         0         0             1
+Same sex .. #|
+          0  |   419.701         0   419.701         0         0             1
+Same sex .. #|
+          1  |   398.548         0   398.548         0         0             1
+------------------------------------------------------------------------------
+
+
+Multiple-imputation estimates  Imputations     =            15
+Survey: Mean estimation        Number of obs   =        99,476
+
+Number of strata  =         1  Population size =  760484104233
+Number of PSUs    =    99,476
+                               Average RVI     =        0.0000
+                               Largest FMI     =        0.0000
+                               Complete DF     =         99475
+DF adjustment:   Small sample  DF:     min     =     99,473.00
+                                       avg     =     99,473.00
+Within VCE type:   Linearized          max     =     99,473.00
+
+-------------------------------------------------------------------------------
+                              |       Mean   Std. Err.     [95% Conf. Interval]
+------------------------------+------------------------------------------------
+c.w_spouse@same_sex3#marlegal |
+                    Hetero#0  |   279.5945   1.116804      277.4056    281.7834
+                    Hetero#1  |   285.7851   1.809744       282.238    289.3322
+              Same sex men#0  |    251.736   18.98635       214.523     288.949
+              Same sex men#1  |   257.1855   20.93092      216.1611    298.2098
+            Same sex women#0  |   344.4386   20.48661      304.2851    384.5921
+            Same sex women#1  |   303.2206   19.96366      264.0921    342.3491
+-------------------------------------------------------------------------------
+
+a[1,6]
+      c.w_spouse@   c.w_spouse@   c.w_spouse@   c.w_spouse@   c.w_spouse@   c.w_spouse@
+     1.same_sex3#  1.same_sex3#  2.same_sex3#  2.same_sex3#  3.same_sex3#  3.same_sex3#
+      0.marlegal    1.marlegal    0.marlegal    1.marlegal    0.marlegal    1.marlegal
+r1      279.5945     285.78512     251.73603     257.18546     344.43862     303.22059
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Mean estimation
+
+Variance information
+
+------------------------------------------------------------------------------
+             |        Imputation variance                             Relative
+             |    Within   Between     Total       RVI       FMI    efficiency
+-------------+----------------------------------------------------------------
+  c.w_sponly@|
+   same_sex3#|
+    marlegal |
+   Hetero#0  |   .861769         0   .861769         0         0             1
+   Hetero#1  |   2.27054         0   2.27054         0         0             1
+Same sex .. #|
+          0  |   270.964         0   270.964         0         0             1
+Same sex .. #|
+          1  |   359.615         0   359.615         0         0             1
+Same sex .. #|
+          0  |   327.943         0   327.943         0         0             1
+Same sex .. #|
+          1  |   259.707   8.7e-28   259.707   3.6e-30   3.6e-30             1
+------------------------------------------------------------------------------
+
+
+Multiple-imputation estimates  Imputations     =            15
+Survey: Mean estimation        Number of obs   =        99,476
+
+Number of strata  =         1  Population size =  760484104233
+Number of PSUs    =    99,476
+                               Average RVI     =        0.0000
+                               Largest FMI     =        0.0000
+                               Complete DF     =         99475
+DF adjustment:   Small sample  DF:     min     =     99,473.00
+                                       avg     =     99,473.00
+Within VCE type:   Linearized          max     =     99,473.00
+
+-------------------------------------------------------------------------------
+                              |       Mean   Std. Err.     [95% Conf. Interval]
+------------------------------+------------------------------------------------
+c.w_sponly@same_sex3#marlegal |
+                    Hetero#0  |   156.4097   .9283149      154.5902    158.2292
+                    Hetero#1  |     165.48    1.50683      162.5266    168.4334
+              Same sex men#0  |   204.1494   16.46098       171.886    236.4127
+              Same sex men#1  |   210.0153   18.96352       172.847    247.1836
+            Same sex women#0  |   250.4328   18.10919       214.939    285.9266
+            Same sex women#1  |   202.5724   16.11542      170.9864    234.1585
+-------------------------------------------------------------------------------
+
+a[1,6]
+      c.w_sponly@   c.w_sponly@   c.w_sponly@   c.w_sponly@   c.w_sponly@   c.w_sponly@
+     1.same_sex3#  1.same_sex3#  2.same_sex3#  2.same_sex3#  3.same_sex3#  3.same_sex3#
+      0.marlegal    1.marlegal    0.marlegal    1.marlegal    0.marlegal    1.marlegal
+r1     156.40967     165.48001     204.14936     210.01531     250.43275     202.57244
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Mean estimation
+
+Variance information
+
+------------------------------------------------------------------------------
+             |        Imputation variance                             Relative
+             |    Within   Between     Total       RVI       FMI    efficiency
+-------------+----------------------------------------------------------------
+   c.w_spkid@|
+   same_sex3#|
+    marlegal |
+   Hetero#0  |   .403249         0   .403249         0         0             1
+   Hetero#1  |   1.00696         0   1.00696         0         0             1
+Same sex .. #|
+          0  |   11.3157         0   11.3157         0         0             1
+Same sex .. #|
+          1  |   20.1359         0   20.1359         0         0             1
+Same sex .. #|
+          0  |   57.8797         0   57.8797         0         0             1
+Same sex .. #|
+          1  |   219.113         0   219.113         0         0             1
+------------------------------------------------------------------------------
+
+
+Multiple-imputation estimates  Imputations     =            15
+Survey: Mean estimation        Number of obs   =        99,476
+
+Number of strata  =         1  Population size =  760484104233
+Number of PSUs    =    99,476
+                               Average RVI     =        0.0000
+                               Largest FMI     =        0.0000
+                               Complete DF     =         99475
+DF adjustment:   Small sample  DF:     min     =     99,473.00
+                                       avg     =     99,473.00
+Within VCE type:   Linearized          max     =     99,473.00
+
+------------------------------------------------------------------------------
+                             |       Mean   Std. Err.     [95% Conf. Interval]
+-----------------------------+------------------------------------------------
+c.w_spkid@same_sex3#marlegal |
+                   Hetero#0  |   83.28875   .6350188      82.04412    84.53338
+                   Hetero#1  |      81.51   1.003474       79.5432     83.4768
+             Same sex men#0  |   9.456187   3.363887       2.86301    16.04936
+             Same sex men#1  |   11.91047    4.48731        3.1154    20.70554
+           Same sex women#0  |   47.26548   7.607869      32.35415    62.17681
+           Same sex women#1  |   63.27558   14.80248       34.2629    92.28825
+------------------------------------------------------------------------------
+
+a[1,6]
+       c.w_spkid@    c.w_spkid@    c.w_spkid@    c.w_spkid@    c.w_spkid@    c.w_spkid@
+     1.same_sex3#  1.same_sex3#  2.same_sex3#  2.same_sex3#  3.same_sex3#  3.same_sex3#
+      0.marlegal    1.marlegal    0.marlegal    1.marlegal    0.marlegal    1.marlegal
+r1     83.288748     81.510001     9.4561872     11.910472     47.265477     63.275575
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Mean estimation
+
+Variance information
+
+------------------------------------------------------------------------------
+             |        Imputation variance                             Relative
+             |    Within   Between     Total       RVI       FMI    efficiency
+-------------+----------------------------------------------------------------
+          c. |
+  total_home@|
+   same_sex3#|
+    marlegal |
+   Hetero#0  |   1.66431         0   1.66431         0         0             1
+   Hetero#1  |   4.13218         0   4.13218         0         0             1
+Same sex .. #|
+          0  |   340.148         0   340.148         0         0             1
+Same sex .. #|
+          1  |   636.571         0   636.571         0         0             1
+Same sex .. #|
+          0  |   408.875         0   408.875         0         0             1
+Same sex .. #|
+          1  |   678.764         0   678.764         0         0             1
+------------------------------------------------------------------------------
+
+
+Multiple-imputation estimates  Imputations     =            15
+Survey: Mean estimation        Number of obs   =        99,476
+
+Number of strata  =         1  Population size =  760484104233
+Number of PSUs    =    99,476
+                               Average RVI     =        0.0000
+                               Largest FMI     =        0.0000
+                               Complete DF     =         99475
+DF adjustment:   Small sample  DF:     min     =     99,473.00
+                                       avg     =     99,473.00
+Within VCE type:   Linearized          max     =     99,473.00
+
+---------------------------------------------------------------------------------
+                                |       Mean   Std. Err.     [95% Conf. Interval]
+--------------------------------+------------------------------------------------
+c.total_home@same_sex3#marlegal |
+                      Hetero#0  |   442.9061    1.29008      440.3776    445.4347
+                      Hetero#1  |   443.6324   2.032776      439.6482    447.6166
+                Same sex men#0  |   402.3088   18.44309      366.1606     438.457
+                Same sex men#1  |   362.7258   25.23037      313.2746     412.177
+              Same sex women#0  |   408.4572   20.22066       368.825    448.0895
+              Same sex women#1  |   414.4673    26.0531      363.4035    465.5311
+---------------------------------------------------------------------------------
+
+a[1,6]
+     c.total_home@  c.total_home@  c.total_home@  c.total_home@  c.total_home@  c.total_home@
+      1.same_sex3#   1.same_sex3#   2.same_sex3#   2.same_sex3#   3.same_sex3#   3.same_sex3#
+       0.marlegal     1.marlegal     0.marlegal     1.marlegal     0.marlegal     1.marlegal
+r1      442.90613      443.63243      402.30881      362.72577      408.45725      414.46729
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Mean estimation
+
+Variance information
+
+------------------------------------------------------------------------------
+             |        Imputation variance                             Relative
+             |    Within   Between     Total       RVI       FMI    efficiency
+-------------+----------------------------------------------------------------
+          c. |
+total_noth~e@|
+   same_sex3#|
+    marlegal |
+   Hetero#0  |   1.66431         0   1.66431         0         0             1
+   Hetero#1  |   4.13218         0   4.13218         0         0             1
+Same sex .. #|
+          0  |   340.148         0   340.148         0         0             1
+Same sex .. #|
+          1  |   636.571         0   636.571         0         0             1
+Same sex .. #|
+          0  |   408.875         0   408.875         0         0             1
+Same sex .. #|
+          1  |   678.764         0   678.764         0         0             1
+------------------------------------------------------------------------------
+
+
+Multiple-imputation estimates  Imputations     =            15
+Survey: Mean estimation        Number of obs   =        99,476
+
+Number of strata  =         1  Population size =  760484104233
+Number of PSUs    =    99,476
+                               Average RVI     =        0.0000
+                               Largest FMI     =        0.0000
+                               Complete DF     =         99475
+DF adjustment:   Small sample  DF:     min     =     99,473.00
+                                       avg     =     99,473.00
+Within VCE type:   Linearized          max     =     99,473.00
+
+------------------------------------------------------------------------------------
+                                   |       Mean   Std. Err.     [95% Conf. Interval]
+-----------------------------------+------------------------------------------------
+c.total_nothome@same_sex3#marlegal |
+                         Hetero#0  |   997.0939    1.29008      994.5653    999.6224
+                         Hetero#1  |   996.3676   2.032776      992.3834    1000.352
+                   Same sex men#0  |   1037.691   18.44309      1001.543    1073.839
+                   Same sex men#1  |   1077.274   25.23037      1027.823    1126.725
+                 Same sex women#0  |   1031.543   20.22066      991.9105    1071.175
+                 Same sex women#1  |   1025.533    26.0531      974.4689    1076.596
+------------------------------------------------------------------------------------
+
+a[1,6]
+     c.total_no~e@  c.total_no~e@  c.total_no~e@  c.total_no~e@  c.total_no~e@  c.total_no~e@
+      1.same_sex3#   1.same_sex3#   2.same_sex3#   2.same_sex3#   3.same_sex3#   3.same_sex3#
+       0.marlegal     1.marlegal     0.marlegal     1.marlegal     0.marlegal     1.marlegal
+r1      997.09387      996.36757      1037.6912      1077.2742      1031.5428      1025.5327
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Mean estimation
+
+Variance information
+
+------------------------------------------------------------------------------
+             |        Imputation variance                             Relative
+             |    Within   Between     Total       RVI       FMI    efficiency
+-------------+----------------------------------------------------------------
+ c.total_out@|
+   same_sex3#|
+    marlegal |
+   Hetero#0  |   .218062         0   .218062         0         0             1
+   Hetero#1  |   .499395         0   .499395         0         0             1
+Same sex .. #|
+          0  |   85.5618         0   85.5618         0         0             1
+Same sex .. #|
+          1  |   115.625         0   115.625         0         0             1
+Same sex .. #|
+          0  |   71.3787         0   71.3787         0         0             1
+Same sex .. #|
+          1  |    82.211         0    82.211         0         0             1
+------------------------------------------------------------------------------
+
+
+Multiple-imputation estimates  Imputations     =            15
+Survey: Mean estimation        Number of obs   =        99,476
+
+Number of strata  =         1  Population size =  760484104233
+Number of PSUs    =    99,476
+                               Average RVI     =        0.0000
+                               Largest FMI     =        0.0000
+                               Complete DF     =         99475
+DF adjustment:   Small sample  DF:     min     =     99,473.00
+                                       avg     =     99,473.00
+Within VCE type:   Linearized          max     =     99,473.00
+
+--------------------------------------------------------------------------------
+                               |       Mean   Std. Err.     [95% Conf. Interval]
+-------------------------------+------------------------------------------------
+c.total_out@same_sex3#marlegal |
+                     Hetero#0  |   67.29714   .4669706      66.38188     68.2124
+                     Hetero#1  |   64.92438   .7066787       63.5393    66.30946
+               Same sex men#0  |   72.31912   9.249964       54.1893    90.44894
+               Same sex men#1  |   85.40639    10.7529      64.33085    106.4819
+             Same sex women#0  |   74.92693   8.448593      58.36779    91.48607
+             Same sex women#1  |    70.0811   9.067031      52.30983    87.85238
+--------------------------------------------------------------------------------
+
+a[1,6]
+     c.total_out@  c.total_out@  c.total_out@  c.total_out@  c.total_out@  c.total_out@
+     1.same_sex3#  1.same_sex3#  2.same_sex3#  2.same_sex3#  3.same_sex3#  3.same_sex3#
+      0.marlegal    1.marlegal    0.marlegal    1.marlegal    0.marlegal    1.marlegal
+r1     67.297139     64.924382     72.319119      85.40639     74.926931     70.081105
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Mean estimation
+
+Variance information
+
+------------------------------------------------------------------------------
+             |        Imputation variance                             Relative
+             |    Within   Between     Total       RVI       FMI    efficiency
+-------------+----------------------------------------------------------------
+          c. |
+total_~_home@|
+   same_sex3#|
+    marlegal |
+   Hetero#0  |   .268741         0   .268741         0         0             1
+   Hetero#1  |   .724145         0   .724145         0         0             1
+Same sex .. #|
+          0  |    113.12         0    113.12         0         0             1
+Same sex .. #|
+          1  |   93.7295         0   93.7295         0         0             1
+Same sex .. #|
+          0  |   64.3669         0   64.3669         0         0             1
+Same sex .. #|
+          1  |   65.8627         0   65.8627         0         0             1
+------------------------------------------------------------------------------
+
+
+Multiple-imputation estimates  Imputations     =            15
+Survey: Mean estimation        Number of obs   =        99,476
+
+Number of strata  =         1  Population size =  760484104233
+Number of PSUs    =    99,476
+                               Average RVI     =        0.0000
+                               Largest FMI     =        0.0000
+                               Complete DF     =         99475
+DF adjustment:   Small sample  DF:     min     =     99,473.00
+                                       avg     =     99,473.00
+Within VCE type:   Linearized          max     =     99,473.00
+
+-----------------------------------------------------------------------------------------
+                                        |       Mean   Std. Err.     [95% Conf. Interval]
+----------------------------------------+------------------------------------------------
+c.total_leisure_home@same_sex3#marlegal |
+                              Hetero#0  |   68.23936   .5184019       67.2233    69.25542
+                              Hetero#1  |   68.45727   .8509671      66.78938    70.12515
+                        Same sex men#0  |   82.64746   10.63578      61.80145    103.4935
+                        Same sex men#1  |   64.20607   9.681397      45.23065    83.18149
+                      Same sex women#0  |   63.90713   8.022897      48.18235    79.63191
+                      Same sex women#1  |   68.91072   8.115585      53.00428    84.81717
+-----------------------------------------------------------------------------------------
+
+a[1,6]
+     c.tot~e_home@  c.tot~e_home@  c.tot~e_home@  c.tot~e_home@  c.tot~e_home@  c.tot~e_home@
+      1.same_sex3#   1.same_sex3#   2.same_sex3#   2.same_sex3#   3.same_sex3#   3.same_sex3#
+       0.marlegal     1.marlegal     0.marlegal     1.marlegal     0.marlegal     1.marlegal
+r1      68.239358      68.457268      82.647456      64.206072      63.907127      68.910724
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Mean estimation
+
+Variance information
+
+------------------------------------------------------------------------------
+             |        Imputation variance                             Relative
+             |    Within   Between     Total       RVI       FMI    efficiency
+-------------+----------------------------------------------------------------
+          c. |
+to~e_nothome@|
+   same_sex3#|
+    marlegal |
+   Hetero#0  |   .243095         0   .243095         0         0             1
+   Hetero#1  |    .59935         0    .59935         0         0             1
+Same sex .. #|
+          0  |   60.1781         0   60.1781         0         0             1
+Same sex .. #|
+          1  |   102.474         0   102.474         0         0             1
+Same sex .. #|
+          0  |    55.515         0    55.515         0         0             1
+Same sex .. #|
+          1  |   89.0574         0   89.0574         0         0             1
+------------------------------------------------------------------------------
+
+
+Multiple-imputation estimates  Imputations     =            15
+Survey: Mean estimation        Number of obs   =        99,476
+
+Number of strata  =         1  Population size =  760484104233
+Number of PSUs    =    99,476
+                               Average RVI     =        0.0000
+                               Largest FMI     =        0.0000
+                               Complete DF     =         99475
+DF adjustment:   Small sample  DF:     min     =     99,473.00
+                                       avg     =     99,473.00
+Within VCE type:   Linearized          max     =     99,473.00
+
+--------------------------------------------------------------------------------------------
+                                           |       Mean   Std. Err.     [95% Conf. Interval]
+-------------------------------------------+------------------------------------------------
+c.total_leisure_nothome@same_sex3#marlegal |
+                                 Hetero#0  |   62.95505   .4930466      61.98869    63.92142
+                                 Hetero#1  |   61.28273    .774177      59.76536    62.80011
+                           Same sex men#0  |   58.59716   7.757454      43.39265    73.80168
+                           Same sex men#1  |   73.79253   10.12294      53.95169    93.63337
+                         Same sex women#0  |   60.52262   7.450837      45.91907    75.12617
+                         Same sex women#1  |   67.08495   9.437023       48.5885     85.5814
+--------------------------------------------------------------------------------------------
+
+a[1,6]
+     c.total_le..@  c.total_le..@  c.total_le..@  c.total_le..@  c.total_le..@  c.total_le..@
+      1.same_sex3#   1.same_sex3#   2.same_sex3#   2.same_sex3#   3.same_sex3#   3.same_sex3#
+       0.marlegal     1.marlegal     0.marlegal     1.marlegal     0.marlegal     1.marlegal
+r1      62.955052      61.282734      58.597164      73.792535      60.522623      67.084953
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Mean estimation
+
+Variance information
+
+------------------------------------------------------------------------------
+             |        Imputation variance                             Relative
+             |    Within   Between     Total       RVI       FMI    efficiency
+-------------+----------------------------------------------------------------
+          c. |
+total_leis~t@|
+   same_sex3#|
+    marlegal |
+   Hetero#0  |   .074536         0   .074536         0         0             1
+   Hetero#1  |   .166797         0   .166797         0         0             1
+Same sex .. #|
+          0  |   21.5293         0   21.5293         0         0             1
+Same sex .. #|
+          1  |   29.5672         0   29.5672         0         0             1
+Same sex .. #|
+          0  |   26.5486         0   26.5486         0         0             1
+Same sex .. #|
+          1  |   14.4128         0   14.4128         0         0             1
+------------------------------------------------------------------------------
+
+
+Multiple-imputation estimates  Imputations     =            15
+Survey: Mean estimation        Number of obs   =        99,476
+
+Number of strata  =         1  Population size =  760484104233
+Number of PSUs    =    99,476
+                               Average RVI     =        0.0000
+                               Largest FMI     =        0.0000
+                               Complete DF     =         99475
+DF adjustment:   Small sample  DF:     min     =     99,473.00
+                                       avg     =     99,473.00
+Within VCE type:   Linearized          max     =     99,473.00
+
+----------------------------------------------------------------------------------------
+                                       |       Mean   Std. Err.     [95% Conf. Interval]
+---------------------------------------+------------------------------------------------
+c.total_leisure_out@same_sex3#marlegal |
+                             Hetero#0  |   21.09647   .2730126      20.56137    21.63157
+                             Hetero#1  |   21.15829   .4084073      20.35782    21.95877
+                       Same sex men#0  |   17.87712   4.639963      8.782852    26.97139
+                       Same sex men#1  |   31.02488   5.437572      20.36731    41.68246
+                     Same sex women#0  |   20.91388   5.152534      10.81498    31.01279
+                     Same sex women#1  |   16.88424   3.796415      9.443309    24.32516
+----------------------------------------------------------------------------------------
+
+a[1,6]
+     c.total_le~t@  c.total_le~t@  c.total_le~t@  c.total_le~t@  c.total_le~t@  c.total_le~t@
+      1.same_sex3#   1.same_sex3#   2.same_sex3#   2.same_sex3#   3.same_sex3#   3.same_sex3#
+       0.marlegal     1.marlegal     0.marlegal     1.marlegal     0.marlegal     1.marlegal
+r1      21.096467      21.158295      17.877123      31.024885      20.913884      16.884236
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Mean estimation
+
+Variance information
+
+------------------------------------------------------------------------------
+             |        Imputation variance                             Relative
+             |    Within   Between     Total       RVI       FMI    efficiency
+-------------+----------------------------------------------------------------
+          c. |
+ spouse_home@|
+   same_sex3#|
+    marlegal |
+   Hetero#0  |   .739995         0   .739995         0         0             1
+   Hetero#1  |   1.99274         0   1.99274         0         0             1
+Same sex .. #|
+          0  |   210.435         0   210.435         0         0             1
+Same sex .. #|
+          1  |    264.98         0    264.98         0         0             1
+Same sex .. #|
+          0  |   233.692         0   233.692         0         0             1
+Same sex .. #|
+          1  |    149.86         0    149.86         0         0             1
+------------------------------------------------------------------------------
+
+
+Multiple-imputation estimates  Imputations     =            15
+Survey: Mean estimation        Number of obs   =        99,476
+
+Number of strata  =         1  Population size =  760484104233
+Number of PSUs    =    99,476
+                               Average RVI     =        0.0000
+                               Largest FMI     =        0.0000
+                               Complete DF     =         99475
+DF adjustment:   Small sample  DF:     min     =     99,473.00
+                                       avg     =     99,473.00
+Within VCE type:   Linearized          max     =     99,473.00
+
+----------------------------------------------------------------------------------
+                                 |       Mean   Std. Err.     [95% Conf. Interval]
+---------------------------------+------------------------------------------------
+c.spouse_home@same_sex3#marlegal |
+                       Hetero#0  |   193.4218   .8602294      191.7357    195.1078
+                       Hetero#1  |   200.2167   1.411644      197.4499    202.9835
+                 Same sex men#0  |   183.8378   14.50637      155.4054    212.2701
+                 Same sex men#1  |   176.1821    16.2782       144.277    208.0872
+               Same sex women#0  |   226.4904   15.28697      196.5281    256.4527
+               Same sex women#1  |   194.0007   12.24171       170.007    217.9943
+----------------------------------------------------------------------------------
+
+a[1,6]
+     c.spouse_h~e@  c.spouse_h~e@  c.spouse_h~e@  c.spouse_h~e@  c.spouse_h~e@  c.spouse_h~e@
+      1.same_sex3#   1.same_sex3#   2.same_sex3#   2.same_sex3#   3.same_sex3#   3.same_sex3#
+       0.marlegal     1.marlegal     0.marlegal     1.marlegal     0.marlegal     1.marlegal
+r1      193.42177       200.2167      183.83775       176.1821      226.49042      194.00066
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Mean estimation
+
+Variance information
+
+------------------------------------------------------------------------------
+             |        Imputation variance                             Relative
+             |    Within   Between     Total       RVI       FMI    efficiency
+-------------+----------------------------------------------------------------
+          c. |
+spouse_not~e@|
+   same_sex3#|
+    marlegal |
+   Hetero#0  |    .50297         0    .50297         0         0             1
+   Hetero#1  |   1.37422         0   1.37422         0         0             1
+Same sex .. #|
+          0  |   106.837         0   106.837         0         0             1
+Same sex .. #|
+          1  |   168.153         0   168.153         0         0             1
+Same sex .. #|
+          0  |   211.708         0   211.708         0         0             1
+Same sex .. #|
+          1  |   246.538         0   246.538         0         0             1
+------------------------------------------------------------------------------
+
+
+Multiple-imputation estimates  Imputations     =            15
+Survey: Mean estimation        Number of obs   =        99,476
+
+Number of strata  =         1  Population size =  760484104233
+Number of PSUs    =    99,476
+                               Average RVI     =        0.0000
+                               Largest FMI     =        0.0000
+                               Complete DF     =         99475
+DF adjustment:   Small sample  DF:     min     =     99,473.00
+                                       avg     =     99,473.00
+Within VCE type:   Linearized          max     =     99,473.00
+
+-------------------------------------------------------------------------------------
+                                    |       Mean   Std. Err.     [95% Conf. Interval]
+------------------------------------+------------------------------------------------
+c.spouse_nothome@same_sex3#marlegal |
+                          Hetero#0  |   86.17273   .7092037       84.7827    87.56276
+                          Hetero#1  |   85.56842   1.172271      83.27078    87.86606
+                    Same sex men#0  |   67.89828   10.33618      47.63949    88.15707
+                    Same sex men#1  |   81.00335   12.96737      55.58747    106.4192
+                  Same sex women#0  |   117.9482   14.55019      89.43001    146.4664
+                  Same sex women#1  |   109.2199   15.70153      78.44512    139.9947
+-------------------------------------------------------------------------------------
+
+a[1,6]
+     c.spouse_n~e@  c.spouse_n~e@  c.spouse_n~e@  c.spouse_n~e@  c.spouse_n~e@  c.spouse_n~e@
+      1.same_sex3#   1.same_sex3#   2.same_sex3#   2.same_sex3#   3.same_sex3#   3.same_sex3#
+       0.marlegal     1.marlegal     0.marlegal     1.marlegal     0.marlegal     1.marlegal
+r1       86.17273      85.568422      67.898279      81.003353      117.94821      109.21993
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Mean estimation
+
+Variance information
+
+------------------------------------------------------------------------------
+             |        Imputation variance                             Relative
+             |    Within   Between     Total       RVI       FMI    efficiency
+-------------+----------------------------------------------------------------
+          c. |
+  spouse_out@|
+   same_sex3#|
+    marlegal |
+   Hetero#0  |    .09634         0    .09634         0         0             1
+   Hetero#1  |   .246051   1.4e-29   .246051   5.9e-29   5.9e-29             1
+Same sex .. #|
+          0  |   21.8532         0   21.8532         0         0             1
+Same sex .. #|
+          1  |   27.7431         0   27.7431         0         0             1
+Same sex .. #|
+          0  |   47.1677         0   47.1677         0         0             1
+Same sex .. #|
+          1  |   73.8017         0   73.8017         0         0             1
+------------------------------------------------------------------------------
+
+
+Multiple-imputation estimates  Imputations     =            15
+Survey: Mean estimation        Number of obs   =        99,476
+
+Number of strata  =         1  Population size =  760484104233
+Number of PSUs    =    99,476
+                               Average RVI     =        0.0000
+                               Largest FMI     =        0.0000
+                               Complete DF     =         99475
+DF adjustment:   Small sample  DF:     min     =     99,473.00
+                                       avg     =     99,473.00
+Within VCE type:   Linearized          max     =     99,473.00
+
+---------------------------------------------------------------------------------
+                                |       Mean   Std. Err.     [95% Conf. Interval]
+--------------------------------+------------------------------------------------
+c.spouse_out@same_sex3#marlegal |
+                      Hetero#0  |   29.97057   .3103866      29.36221    30.57892
+                      Hetero#1  |   28.66235   .4960354      27.69012    29.63457
+                Same sex men#0  |   24.52123   4.674745      15.35878    33.68367
+                Same sex men#1  |   29.66163   5.267169      19.33804    39.98522
+              Same sex women#0  |   39.04305   6.867871      25.58211    52.50399
+              Same sex women#1  |   41.22498   8.590793      24.38713    58.06283
+---------------------------------------------------------------------------------
+
+a[1,6]
+     c.spouse_out@  c.spouse_out@  c.spouse_out@  c.spouse_out@  c.spouse_out@  c.spouse_out@
+      1.same_sex3#   1.same_sex3#   2.same_sex3#   2.same_sex3#   3.same_sex3#   3.same_sex3#
+       0.marlegal     1.marlegal     0.marlegal     1.marlegal     0.marlegal     1.marlegal
+r1      29.970569      28.662347      24.521227      29.661628       39.04305      41.224981
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Mean estimation
+
+Variance information
+
+------------------------------------------------------------------------------
+             |        Imputation variance                             Relative
+             |    Within   Between     Total       RVI       FMI    efficiency
+-------------+----------------------------------------------------------------
+          c. |
+spou~re_home@|
+   same_sex3#|
+    marlegal |
+   Hetero#0  |   .111495         0   .111495         0         0             1
+   Hetero#1  |   .367312         0   .367312         0         0             1
+Same sex .. #|
+          0  |   35.1177         0   35.1177         0         0             1
+Same sex .. #|
+          1  |    47.332         0    47.332         0         0             1
+Same sex .. #|
+          0  |   46.3697         0   46.3697         0         0             1
+Same sex .. #|
+          1  |   21.4956         0   21.4956         0         0             1
+------------------------------------------------------------------------------
+
+
+Multiple-imputation estimates  Imputations     =            15
+Survey: Mean estimation        Number of obs   =        99,476
+
+Number of strata  =         1  Population size =  760484104233
+Number of PSUs    =    99,476
+                               Average RVI     =        0.0000
+                               Largest FMI     =        0.0000
+                               Complete DF     =         99475
+DF adjustment:   Small sample  DF:     min     =     99,473.00
+                                       avg     =     99,473.00
+Within VCE type:   Linearized          max     =     99,473.00
+
+------------------------------------------------------------------------------------------
+                                         |       Mean   Std. Err.     [95% Conf. Interval]
+-----------------------------------------+------------------------------------------------
+c.spouse_leisure_home@same_sex3#marlegal |
+                               Hetero#0  |   32.35142   .3339086      31.69696    33.00587
+                               Hetero#1  |   34.65299   .6060623      33.46512    35.84087
+                         Same sex men#0  |   36.43947    5.92602      24.82455     48.0544
+                         Same sex men#1  |   32.73124   6.879823      19.24687    46.21561
+                       Same sex women#0  |   35.71697   6.809531      22.37037    49.06357
+                       Same sex women#1  |    37.6729   4.636335      28.58574    46.76006
+------------------------------------------------------------------------------------------
+
+a[1,6]
+     c.sp~re_home@  c.sp~re_home@  c.sp~re_home@  c.sp~re_home@  c.sp~re_home@  c.sp~re_home@
+      1.same_sex3#   1.same_sex3#   2.same_sex3#   2.same_sex3#   3.same_sex3#   3.same_sex3#
+       0.marlegal     1.marlegal     0.marlegal     1.marlegal     0.marlegal     1.marlegal
+r1      32.351416      34.652993      36.439473      32.731235      35.716968      37.672901
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Mean estimation
+
+Variance information
+
+------------------------------------------------------------------------------
+             |        Imputation variance                             Relative
+             |    Within   Between     Total       RVI       FMI    efficiency
+-------------+----------------------------------------------------------------
+          c. |
+s~re_nothome@|
+   same_sex3#|
+    marlegal |
+   Hetero#0  |   .116471         0   .116471         0         0             1
+   Hetero#1  |   .329716         0   .329716         0         0             1
+Same sex .. #|
+          0  |   25.2535         0   25.2535         0         0             1
+Same sex .. #|
+          1  |   55.6857         0   55.6857         0         0             1
+Same sex .. #|
+          0  |   33.2001         0   33.2001         0         0             1
+Same sex .. #|
+          1  |   60.2059         0   60.2059         0         0             1
+------------------------------------------------------------------------------
+
+
+Multiple-imputation estimates  Imputations     =            15
+Survey: Mean estimation        Number of obs   =        99,476
+
+Number of strata  =         1  Population size =  760484104233
+Number of PSUs    =    99,476
+                               Average RVI     =        0.0000
+                               Largest FMI     =        0.0000
+                               Complete DF     =         99475
+DF adjustment:   Small sample  DF:     min     =     99,473.00
+                                       avg     =     99,473.00
+Within VCE type:   Linearized          max     =     99,473.00
+
+---------------------------------------------------------------------------------------------
+                                            |       Mean   Std. Err.     [95% Conf. Interval]
+--------------------------------------------+------------------------------------------------
+c.spouse_leisure_nothome@same_sex3#marlegal |
+                                  Hetero#0  |   27.80139    .341278      27.13249    28.47029
+                                  Hetero#1  |   27.88319   .5742094      26.75775    29.00863
+                            Same sex men#0  |   21.77712   5.025286      11.92762    31.62662
+                            Same sex men#1  |   32.12372   7.462288      17.49773    46.74972
+                          Same sex women#0  |   31.24916   5.761953       19.9558    42.54251
+                          Same sex women#1  |   34.97255   7.759247      19.76452    50.18058
+---------------------------------------------------------------------------------------------
+
+a[1,6]
+     c.spouse_l..@  c.spouse_l..@  c.spouse_l..@  c.spouse_l..@  c.spouse_l..@  c.spouse_l..@
+      1.same_sex3#   1.same_sex3#   2.same_sex3#   2.same_sex3#   3.same_sex3#   3.same_sex3#
+       0.marlegal     1.marlegal     0.marlegal     1.marlegal     0.marlegal     1.marlegal
+r1      27.801388      27.883191       21.77712      32.123721      31.249157      34.972548
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Mean estimation
+
+Variance information
+
+------------------------------------------------------------------------------
+             |        Imputation variance                             Relative
+             |    Within   Between     Total       RVI       FMI    efficiency
+-------------+----------------------------------------------------------------
+          c. |
+spouse_lei~t@|
+   same_sex3#|
+    marlegal |
+   Hetero#0  |   .031785         0   .031785         0         0             1
+   Hetero#1  |   .079749         0   .079749         0         0             1
+Same sex .. #|
+          0  |   4.69095         0   4.69095         0         0             1
+Same sex .. #|
+          1  |   8.33954         0   8.33954         0         0             1
+Same sex .. #|
+          0  |   13.3341         0   13.3341         0         0             1
+Same sex .. #|
+          1  |   8.69085   3.4e-30   8.69085   4.1e-31   4.1e-31             1
+------------------------------------------------------------------------------
+
+
+Multiple-imputation estimates  Imputations     =            15
+Survey: Mean estimation        Number of obs   =        99,476
+
+Number of strata  =         1  Population size =  760484104233
+Number of PSUs    =    99,476
+                               Average RVI     =        0.0000
+                               Largest FMI     =        0.0000
+                               Complete DF     =         99475
+DF adjustment:   Small sample  DF:     min     =     99,473.00
+                                       avg     =     99,473.00
+Within VCE type:   Linearized          max     =     99,473.00
+
+-----------------------------------------------------------------------------------------
+                                        |       Mean   Std. Err.     [95% Conf. Interval]
+----------------------------------------+------------------------------------------------
+c.spouse_leisure_out@same_sex3#marlegal |
+                              Hetero#0  |   9.357517    .178284      9.008082    9.706951
+                              Hetero#1  |    9.30706   .2823988      8.753562    9.860558
+                        Same sex men#0  |   5.907633    2.16586      1.662574    10.15269
+                        Same sex men#1  |   8.777963   2.887827      3.117858    14.43807
+                      Same sex women#0  |   7.820634   3.651585      .6635724     14.9777
+                      Same sex women#1  |   8.615538   2.948024      2.837446    14.39363
+-----------------------------------------------------------------------------------------
+
+a[1,6]
+     c.spouse_l~t@  c.spouse_l~t@  c.spouse_l~t@  c.spouse_l~t@  c.spouse_l~t@  c.spouse_l~t@
+      1.same_sex3#   1.same_sex3#   2.same_sex3#   2.same_sex3#   3.same_sex3#   3.same_sex3#
+       0.marlegal     1.marlegal     0.marlegal     1.marlegal     0.marlegal     1.marlegal
+r1      9.3575168      9.3070602      5.9076328      8.7779635      7.8206338      8.6155376
+.         disp "var|hetero non-parent|hetero parent|ss men non-parent|ss men parent|ss women non-parent|ss women parent";
+var|hetero non-parent|hetero parent|ss men non-parent|ss men parent|ss women non-parent|ss women parent
+.         foreach v in `tuv_vars' {;
+  2.  //hetero, ss men, ss women
+>                 cap confirm var `v';
+  3.                 if !_rc {;
+  4.                         disp "`v'|``v'_1'|``v'_2'|``v'_3'|``v'_4'|``v'_5'|``v'_6'";
+  5.                         };
+  6.                 };
+w_spouse|279.594|285.785|251.736|257.185|344.439|303.221
+w_sponly|156.41|165.48|204.149|210.015|250.433|202.572
+w_spkid|83.289|81.51000000000001|9.456|11.91|47.265|63.276
+total_home|442.906|443.632|402.309|362.726|408.457|414.467
+total_nothome|997.0940000000001|996.3680000000001|1037.691|1077.274|1031.543|1025.533
+total_out|67.297|64.92400000000001|72.319|85.40600000000001|74.92700000000001|70.081
+total_leisure_home|68.239|68.45700000000001|82.64700000000001|64.206|63.907|68.911
+total_leisure_nothome|62.955|61.283|58.597|73.79300000000001|60.523|67.08500000000001
+total_leisure_out|21.096|21.158|17.877|31.025|20.914|16.884
+spouse_home|193.422|200.217|183.838|176.182|226.49|194.001
+spouse_nothome|86.173|85.568|67.898|81.003|117.948|109.22
+spouse_out|29.971|28.662|24.521|29.662|39.043|41.225
+spouse_leisure_home|32.351|34.653|36.439|32.731|35.717|37.673
+spouse_leisure_nothome|27.801|27.883|21.777|32.124|31.249|34.973
+spouse_leisure_out|9.358000000000001|9.307|5.908|8.778|7.821|8.616
+.         foreach n in 0 1 {;
+  2.                 disp "!!!!!working on marlegal=`n'";
+  3.                 foreach v in `tuv_vars' {;
+  4.  //hetero, ss men, ss women
+> 
+>         disp "!!!!!working on variable=`v'";
+  5.                 /*qui*/ xi: mi estimate, saving(myresults, replace): svy, subpop(if marlegal==`n'): regress `v' i.same_sex3;
+  6.                         /*qui*/ mi estimate (diff:_b[_Isame_sex3_2]) using myresults;
+  7.                         matrix a=r(table);
+  8.                         qui matrix list a;
+  9.                         local `v'_test_het_ssm_par`n'=round(a[4,1],.0001);
+ 10.  //this is the pvalue
+> 
+>                         /*qui*/ mi estimate (diff:_b[_Isame_sex3_3]) using myresults;
+ 11.                         matrix a=r(table);
+ 12.                         qui matrix list a;
+ 13.                         local `v'_test_het_ssw_par`n'=round(a[4,1],.0001);
+ 14.  //this is the pvalue
+> 
+>                         /*qui*/ mi estimate (diff:_b[_Isame_sex3_2] - _b[_Isame_sex3_3]) using myresults;
+ 15.                         matrix a=r(table);
+ 16.                         qui matrix list a;
+ 17.                         local `v'_test_ssm_ssw_par`n'=round(a[4,1],.0001);
+ 18.  //this is the pvalue
+>                 };
+ 19.                 };
+!!!!!working on marlegal=0
+!!!!!working on variable=w_spouse
+i.same_sex3       _Isame_sex3_1-3     (naturally coded; _Isame_sex3_1 omitted)
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             6.08
+Within VCE type:   Linearized             Prob > F          =           0.0023
+
+-------------------------------------------------------------------------------
+     w_spouse |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |  -27.85847   19.01916    -1.46   0.143     -65.1358    9.418863
+_Isame_sex3_3 |   64.84412   20.51703     3.16   0.002     24.63099    105.0573
+        _cons |   279.5945   1.116804   250.35   0.000     277.4056    281.7834
+-------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             6.08
+Within VCE type:   Linearized             Prob > F          =           0.0023
+
+-------------------------------------------------------------------------------
+     w_spouse |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |  -27.85847   19.01916    -1.46   0.143     -65.1358    9.418863
+_Isame_sex3_3 |   64.84412   20.51703     3.16   0.002     24.63099    105.0573
+        _cons |   279.5945   1.116804   250.35   0.000     277.4056    281.7834
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_2]
+
+------------------------------------------------------------------------------
+    w_spouse |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |  -27.85847   19.01916    -1.46   0.143     -65.1358    9.418863
+------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             6.08
+Within VCE type:   Linearized             Prob > F          =           0.0023
+
+-------------------------------------------------------------------------------
+     w_spouse |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |  -27.85847   19.01916    -1.46   0.143     -65.1358    9.418863
+_Isame_sex3_3 |   64.84412   20.51703     3.16   0.002     24.63099    105.0573
+        _cons |   279.5945   1.116804   250.35   0.000     277.4056    281.7834
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_3]
+
+------------------------------------------------------------------------------
+    w_spouse |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |   64.84412   20.51703     3.16   0.002     24.63099    105.0573
+------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             6.08
+Within VCE type:   Linearized             Prob > F          =           0.0023
+
+-------------------------------------------------------------------------------
+     w_spouse |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |  -27.85847   19.01916    -1.46   0.143     -65.1358    9.418863
+_Isame_sex3_3 |   64.84412   20.51703     3.16   0.002     24.63099    105.0573
+        _cons |   279.5945   1.116804   250.35   0.000     277.4056    281.7834
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_2] - _b[_Isame_sex3_3]
+
+------------------------------------------------------------------------------
+    w_spouse |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |  -92.70259   27.93175    -3.32   0.001    -147.4485    -37.9567
+------------------------------------------------------------------------------
+!!!!!working on variable=w_sponly
+i.same_sex3       _Isame_sex3_1-3     (naturally coded; _Isame_sex3_1 omitted)
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =            17.59
+Within VCE type:   Linearized             Prob > F          =           0.0000
+
+-------------------------------------------------------------------------------
+     w_sponly |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |   47.73968   16.48714     2.90   0.004      15.4251    80.05427
+_Isame_sex3_3 |   94.02308   18.13297     5.19   0.000     58.48268    129.5635
+        _cons |   156.4097   .9283149   168.49   0.000     154.5902    158.2292
+-------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =            17.59
+Within VCE type:   Linearized             Prob > F          =           0.0000
+
+-------------------------------------------------------------------------------
+     w_sponly |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |   47.73968   16.48714     2.90   0.004      15.4251    80.05427
+_Isame_sex3_3 |   94.02308   18.13297     5.19   0.000     58.48268    129.5635
+        _cons |   156.4097   .9283149   168.49   0.000     154.5902    158.2292
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_2]
+
+------------------------------------------------------------------------------
+    w_sponly |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |   47.73968   16.48714     2.90   0.004      15.4251    80.05427
+------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =            17.59
+Within VCE type:   Linearized             Prob > F          =           0.0000
+
+-------------------------------------------------------------------------------
+     w_sponly |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |   47.73968   16.48714     2.90   0.004      15.4251    80.05427
+_Isame_sex3_3 |   94.02308   18.13297     5.19   0.000     58.48268    129.5635
+        _cons |   156.4097   .9283149   168.49   0.000     154.5902    158.2292
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_3]
+
+------------------------------------------------------------------------------
+    w_sponly |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |   94.02308   18.13297     5.19   0.000     58.48268    129.5635
+------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =            17.59
+Within VCE type:   Linearized             Prob > F          =           0.0000
+
+-------------------------------------------------------------------------------
+     w_sponly |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |   47.73968   16.48714     2.90   0.004      15.4251    80.05427
+_Isame_sex3_3 |   94.02308   18.13297     5.19   0.000     58.48268    129.5635
+        _cons |   156.4097   .9283149   168.49   0.000     154.5902    158.2292
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_2] - _b[_Isame_sex3_3]
+
+------------------------------------------------------------------------------
+    w_sponly |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |   -46.2834   24.47257    -1.89   0.059    -94.24934    1.682546
+------------------------------------------------------------------------------
+!!!!!working on variable=w_spkid
+i.same_sex3       _Isame_sex3_1-3     (naturally coded; _Isame_sex3_1 omitted)
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =           242.20
+Within VCE type:   Linearized             Prob > F          =           0.0000
+
+-------------------------------------------------------------------------------
+      w_spkid |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |  -73.83256     3.4233   -21.57   0.000    -80.54219   -67.12294
+_Isame_sex3_3 |  -36.02327   7.634325    -4.72   0.000    -50.98646   -21.06009
+        _cons |   83.28875   .6350188   131.16   0.000     82.04412    84.53338
+-------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =           242.20
+Within VCE type:   Linearized             Prob > F          =           0.0000
+
+-------------------------------------------------------------------------------
+      w_spkid |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |  -73.83256     3.4233   -21.57   0.000    -80.54219   -67.12294
+_Isame_sex3_3 |  -36.02327   7.634325    -4.72   0.000    -50.98646   -21.06009
+        _cons |   83.28875   .6350188   131.16   0.000     82.04412    84.53338
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_2]
+
+------------------------------------------------------------------------------
+     w_spkid |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |  -73.83256     3.4233   -21.57   0.000    -80.54219   -67.12294
+------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =           242.20
+Within VCE type:   Linearized             Prob > F          =           0.0000
+
+-------------------------------------------------------------------------------
+      w_spkid |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |  -73.83256     3.4233   -21.57   0.000    -80.54219   -67.12294
+_Isame_sex3_3 |  -36.02327   7.634325    -4.72   0.000    -50.98646   -21.06009
+        _cons |   83.28875   .6350188   131.16   0.000     82.04412    84.53338
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_3]
+
+------------------------------------------------------------------------------
+     w_spkid |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |  -36.02327   7.634325    -4.72   0.000    -50.98646   -21.06009
+------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =           242.20
+Within VCE type:   Linearized             Prob > F          =           0.0000
+
+-------------------------------------------------------------------------------
+      w_spkid |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |  -73.83256     3.4233   -21.57   0.000    -80.54219   -67.12294
+_Isame_sex3_3 |  -36.02327   7.634325    -4.72   0.000    -50.98646   -21.06009
+        _cons |   83.28875   .6350188   131.16   0.000     82.04412    84.53338
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_2] - _b[_Isame_sex3_3]
+
+------------------------------------------------------------------------------
+     w_spkid |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |  -37.80929   8.318377    -4.55   0.000    -54.11321   -21.50537
+------------------------------------------------------------------------------
+!!!!!working on variable=total_home
+i.same_sex3       _Isame_sex3_1-3     (naturally coded; _Isame_sex3_1 omitted)
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             3.84
+Within VCE type:   Linearized             Prob > F          =           0.0215
+
+-------------------------------------------------------------------------------
+   total_home |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |  -40.59732   18.48815    -2.20   0.028    -76.83388   -4.360765
+_Isame_sex3_3 |  -34.44888   20.26177    -1.70   0.089    -74.16171    5.263951
+        _cons |   442.9061    1.29008   343.32   0.000     440.3776    445.4347
+-------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             3.84
+Within VCE type:   Linearized             Prob > F          =           0.0215
+
+-------------------------------------------------------------------------------
+   total_home |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |  -40.59732   18.48815    -2.20   0.028    -76.83388   -4.360765
+_Isame_sex3_3 |  -34.44888   20.26177    -1.70   0.089    -74.16171    5.263951
+        _cons |   442.9061    1.29008   343.32   0.000     440.3776    445.4347
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_2]
+
+------------------------------------------------------------------------------
+  total_home |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |  -40.59732   18.48815    -2.20   0.028    -76.83388   -4.360765
+------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             3.84
+Within VCE type:   Linearized             Prob > F          =           0.0215
+
+-------------------------------------------------------------------------------
+   total_home |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |  -40.59732   18.48815    -2.20   0.028    -76.83388   -4.360765
+_Isame_sex3_3 |  -34.44888   20.26177    -1.70   0.089    -74.16171    5.263951
+        _cons |   442.9061    1.29008   343.32   0.000     440.3776    445.4347
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_3]
+
+------------------------------------------------------------------------------
+  total_home |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |  -34.44888   20.26177    -1.70   0.089    -74.16171    5.263951
+------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             3.84
+Within VCE type:   Linearized             Prob > F          =           0.0215
+
+-------------------------------------------------------------------------------
+   total_home |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |  -40.59732   18.48815    -2.20   0.028    -76.83388   -4.360765
+_Isame_sex3_3 |  -34.44888   20.26177    -1.70   0.089    -74.16171    5.263951
+        _cons |   442.9061    1.29008   343.32   0.000     440.3776    445.4347
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_2] - _b[_Isame_sex3_3]
+
+------------------------------------------------------------------------------
+  total_home |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |  -6.148443   27.36828    -0.22   0.822    -59.78994    47.49305
+------------------------------------------------------------------------------
+!!!!!working on variable=total_nothome
+i.same_sex3       _Isame_sex3_1-3     (naturally coded; _Isame_sex3_1 omitted)
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             3.84
+Within VCE type:   Linearized             Prob > F          =           0.0215
+
+-------------------------------------------------------------------------------
+total_nothome |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |   40.59732   18.48815     2.20   0.028     4.360765    76.83388
+_Isame_sex3_3 |   34.44888   20.26177     1.70   0.089    -5.263951    74.16171
+        _cons |   997.0939    1.29008   772.89   0.000     994.5653    999.6224
+-------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             3.84
+Within VCE type:   Linearized             Prob > F          =           0.0215
+
+-------------------------------------------------------------------------------
+total_nothome |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |   40.59732   18.48815     2.20   0.028     4.360765    76.83388
+_Isame_sex3_3 |   34.44888   20.26177     1.70   0.089    -5.263951    74.16171
+        _cons |   997.0939    1.29008   772.89   0.000     994.5653    999.6224
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_2]
+
+------------------------------------------------------------------------------
+total_noth~e |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |   40.59732   18.48815     2.20   0.028     4.360765    76.83388
+------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             3.84
+Within VCE type:   Linearized             Prob > F          =           0.0215
+
+-------------------------------------------------------------------------------
+total_nothome |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |   40.59732   18.48815     2.20   0.028     4.360765    76.83388
+_Isame_sex3_3 |   34.44888   20.26177     1.70   0.089    -5.263951    74.16171
+        _cons |   997.0939    1.29008   772.89   0.000     994.5653    999.6224
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_3]
+
+------------------------------------------------------------------------------
+total_noth~e |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |   34.44888   20.26177     1.70   0.089    -5.263951    74.16171
+------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             3.84
+Within VCE type:   Linearized             Prob > F          =           0.0215
+
+-------------------------------------------------------------------------------
+total_nothome |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |   40.59732   18.48815     2.20   0.028     4.360765    76.83388
+_Isame_sex3_3 |   34.44888   20.26177     1.70   0.089    -5.263951    74.16171
+        _cons |   997.0939    1.29008   772.89   0.000     994.5653    999.6224
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_2] - _b[_Isame_sex3_3]
+
+------------------------------------------------------------------------------
+total_noth~e |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |   6.148443   27.36828     0.22   0.822    -47.49305    59.78994
+------------------------------------------------------------------------------
+!!!!!working on variable=total_out
+i.same_sex3       _Isame_sex3_1-3     (naturally coded; _Isame_sex3_1 omitted)
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             0.55
+Within VCE type:   Linearized             Prob > F          =           0.5757
+
+-------------------------------------------------------------------------------
+    total_out |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |    5.02198   9.261743     0.54   0.588    -13.13092    23.17488
+_Isame_sex3_3 |   7.629793   8.461488     0.90   0.367    -8.954622    24.21421
+        _cons |   67.29714   .4669706   144.11   0.000     66.38188     68.2124
+-------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             0.55
+Within VCE type:   Linearized             Prob > F          =           0.5757
+
+-------------------------------------------------------------------------------
+    total_out |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |    5.02198   9.261743     0.54   0.588    -13.13092    23.17488
+_Isame_sex3_3 |   7.629793   8.461488     0.90   0.367    -8.954622    24.21421
+        _cons |   67.29714   .4669706   144.11   0.000     66.38188     68.2124
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_2]
+
+------------------------------------------------------------------------------
+   total_out |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |    5.02198   9.261743     0.54   0.588    -13.13092    23.17488
+------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             0.55
+Within VCE type:   Linearized             Prob > F          =           0.5757
+
+-------------------------------------------------------------------------------
+    total_out |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |    5.02198   9.261743     0.54   0.588    -13.13092    23.17488
+_Isame_sex3_3 |   7.629793   8.461488     0.90   0.367    -8.954622    24.21421
+        _cons |   67.29714   .4669706   144.11   0.000     66.38188     68.2124
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_3]
+
+------------------------------------------------------------------------------
+   total_out |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |   7.629793   8.461488     0.90   0.367    -8.954622    24.21421
+------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             0.55
+Within VCE type:   Linearized             Prob > F          =           0.5757
+
+-------------------------------------------------------------------------------
+    total_out |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |    5.02198   9.261743     0.54   0.588    -13.13092    23.17488
+_Isame_sex3_3 |   7.629793   8.461488     0.90   0.367    -8.954622    24.21421
+        _cons |   67.29714   .4669706   144.11   0.000     66.38188     68.2124
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_2] - _b[_Isame_sex3_3]
+
+------------------------------------------------------------------------------
+   total_out |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |  -2.607812   12.52759    -0.21   0.835    -27.16174    21.94611
+------------------------------------------------------------------------------
+!!!!!working on variable=total_leisure_home
+i.same_sex3       _Isame_sex3_1-3     (naturally coded; _Isame_sex3_1 omitted)
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             1.06
+Within VCE type:   Linearized             Prob > F          =           0.3455
+
+-------------------------------------------------------------------------------
+total_l~_home |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |    14.4081   10.64841     1.35   0.176    -6.462651    35.27885
+_Isame_sex3_3 |  -4.332231   8.039628    -0.54   0.590     -20.0898    11.42534
+        _cons |   68.23936   .5184019   131.63   0.000      67.2233    69.25542
+-------------------------------------------------------------------------------
+
+Multiple-imputation estimates             Imputations       =               15
+Survey: Linear regression                 Number of obs     =           99,476
+
+Number of strata  =         1             Population size   =  760,484,104,233
+Number of PSUs    =    99,476             Subpop. no. obs   =           71,568
+                                          Subpop. size      =  489,204,646,680
+                                          Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+                                                  max       =        99,473.00
+Model F test:       Equal FMI             F(   2,99473.0)   =             1.06
+Within VCE type:   Linearized             Prob > F          =           0.3455
+
+-------------------------------------------------------------------------------
+total_l~_home |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+--------------+----------------------------------------------------------------
+_Isame_sex3_2 |    14.4081   10.64841     1.35   0.176    -6.462651    35.27885
+_Isame_sex3_3 |  -4.332231   8.039628    -0.54   0.590     -20.0898    11.42534
+        _cons |   68.23936   .5184019   131.63   0.000      67.2233    69.25542
+-------------------------------------------------------------------------------
+
+Transformations                           Average RVI       =           0.0000
+                                          Largest FMI       =           0.0000
+                                          Complete DF       =            99475
+DF adjustment:   Small sample             DF:     min       =        99,473.00
+                                                  avg       =        99,473.00
+Within VCE type:   Linearized                     max       =        99,473.00
+
+         diff: _b[_Isame_sex3_2]
+
+------------------------------------------------------------------------------
+total_~_home |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+        diff |    14.4081   10.64841     1.35   0.176    -6.462651    35.27885
+------------------------------------------------------------------------------
+_total_leisure_home_test_het_ssm_par0 invalid name
+r(198);
+.                 disp "var|test hetero vs ssmen|test hetero vs sswomen|ssmen vs sswomen";
+.         foreach n in 0 1 {;
+  2.         foreach v in `tuv_vars' {;
+  3.                 disp "`v'_mar`n'|``v'_test_het_ssm_mar`n''|``v'_test_het_ssw_mar`n''|``v'_test_ssm_ssw_mar`n''";
+  4.                 };
+  5.                 };
+.         };
+r(198);
+
+end of do-file
+
+r(198);
+

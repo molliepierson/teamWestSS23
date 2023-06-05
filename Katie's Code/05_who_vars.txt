@@ -1,0 +1,67 @@
+
+#delimit;
+clear;
+clear matrix;
+set more off;
+
+local logdate = string( d(`c(current_date)'), "%dN.D.Y" );
+
+log using logs/05_who_vars_`logdate'.log, t replace;
+
+include includes/data_locations.doi;
+
+use `data'recode_person_pre_drop.dta;
+keep caseid lineno ispart;
+keep if ispart==1;
+rename lineno linenow;
+merge 1:m caseid lineno using `data'extract_w;
+
+/***relationships***/
+rename actlinew actline;
+
+
+egen maxwhos=max(wholine), by(caseid actline);
+
+gen _aloneand=0;
+	replace _aloneand=1 if relatew==100 & maxwhos>1 ;
+
+egen aloneand=max(_aloneand),by(caseid actline);
+
+gen _alone=0;
+	replace _alone=1 if relatew==100 & maxwhos==1 ;
+
+gen _spouse=0;
+	replace _spouse=1 if ispart==1;
+	
+gen _kid=0;
+	replace _kid=1 if ((relatew==202 & agew<18) | (relatew==206 & agew<18) | (relatew==207 & agew<18) | (relatew==210 & agew<18) | (relatew==300 & agew<18)) & ispart!=1;
+
+gen _other=0;
+	replace _other=1 if _alone==0 & _kid==0 & _spouse==0;
+
+assert _kid!=1 if _spouse==1;
+
+
+foreach x in alone spouse kid other {;
+	egen `x'=max(_`x'),by(caseid actline);
+	};
+
+
+gen sponly=0;
+	replace sponly=1 if spouse==1&other==0&kid==0;
+
+gen spkid=0;
+	replace spkid=1 if spouse==1&kid==1;
+
+assert spouse==1 if sponly==1;
+assert spouse==1 if spkid==1;
+
+save `data'_create_whos.dta, replace;
+
+keep if wholine==1;
+keep spouse sponly spkid caseid actline;
+save `data'create_whos.dta, replace;
+
+log close;
+
+

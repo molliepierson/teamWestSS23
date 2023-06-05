@@ -1,0 +1,287 @@
+#delimit;
+clear;
+clear matrix;
+set more off;
+
+local logdate = string( d(`c(current_date)'), "%dN.D.Y" );
+
+log using logs/03_recode_pvars_`logdate'.log, t replace;
+
+include includes/data_locations.doi;
+
+use `data'extract_hhcomp.dta;
+rename nchild pointer_nchild;
+
+/*10 year age categories*/
+gen age2=0;
+	replace age2=1 if age<30;
+	replace age2=2 if age>=30 & age<40;
+	replace age2=3 if age>=40 & age<50;
+	replace age2=4 if age>=50 & age<60;
+	replace age2=5 if age>=60;
+
+	label define age_lb 1 "Less 30" 2 "30-39" 3 "40-49" 4 "50-59" 5 "60 and over";
+	label values age2 age_lb;
+
+
+gen _child=1 if age<18 & (relate==22 | relate==26 | relate==27 | relate==30 | relate==40);
+gen _ageychild=age if _child==1;
+
+/*identify children and age of youngest*/	
+egen children=sum(_child),by(caseid);
+gen nchild=children;
+	replace nchild=3 if children>=3;
+	replace nchild=. if nchild==0;
+egen youngest_child=min(_ageychild),by(caseid);
+gen youngest_child2=.;
+	replace youngest_child2=1 if youngest_child<6;
+	replace youngest_child2=2 if youngest_child>=6 & youngest_child<=13;
+	replace youngest_child2=3 if youngest_child>=14 & youngest_child<=17;
+	
+	label define ych_lb 1 "<6" 2 "6-13" 3 "14-17";
+	label values youngest_child2 ych_lb;
+	
+gen parents=(children>0);
+
+gen rec_time=3;
+	replace rec_time=2 if year==2007 & month==12;
+	replace rec_time=2 if year==2008;
+	replace rec_time=2 if year==2009 & month<7;
+	replace rec_time=1 if year<=2006; 
+	replace rec_time=1 if year==2007 & month<=11;
+
+	label define rec_lb 1 "pre" 2 "rec" 3 "post";
+	label values rec_time rec_lb;
+
+*drop _child _ageychild;
+
+gen income=9;
+	replace income=1 if famincome <= 7;
+	replace income=2 if famincome >=8 & famincome<=13;
+	replace income=3 if famincome >=14 & famincome <=15;
+	replace income=4 if famincome==16;
+
+	lab def inc_lb 1 "Less than 25000" 2 "25000-74999" 3 "75000-149999" 4 "150000 and over" 9 "missing";
+	lab values income inc_lb;
+
+gen day_week=1;
+	replace day_week=2 if day==1 | day==7;
+	
+	lab def wkd_lb 1 "weekday" 2 "weekend";
+	lab values day_week wkd_lb;
+
+gen race_red=3 if race!=9999;
+	replace race_red=1 if race==100;
+	replace race_red=2 if race==110;
+
+	lab def race_lb 1 "white" 2 "black" 3 "other";
+	lab values race_red race_lb;
+
+gen educ_red=3 if educ!=999;
+	replace educ_red=1 if educ<20;
+	replace educ_red=2 if educ>=20 & educ<40;
+	
+	lab def edu_lb 1 "less hs" 2 "hs & some coll" 3 "degree +";
+	lab values educ_red edu_lb;
+
+gen employed=0 if empstat!=99;
+	replace employed=1 if empstat<=2;
+
+gen marlegal = 0;
+replace marlegal = 1 if date>=20150627;
+replace marlegal = 1 if date>=20040517&statefip==25;
+replace marlegal = 1 if date>=20080616&date<=20081105&statefip==6;
+replace marlegal = 1 if date>=20081112&statefip==9;
+replace marlegal = 1 if date>=20090427&statefip==19;
+replace marlegal = 1 if date>=20090902&statefip==50;
+replace marlegal = 1 if date>=20100101&statefip==33;
+replace marlegal = 1 if date>=20100309&statefip==11;
+replace marlegal = 1 if date>=20110724&statefip==36;
+replace marlegal = 1 if date>=20121206&statefip==53;
+replace marlegal = 1 if date>=20121229&statefip==23;
+replace marlegal = 1 if date>=20130101&statefip==24;
+replace marlegal = 1 if date>=20130628&statefip==6;
+replace marlegal = 1 if date>=20130701&statefip==10;
+replace marlegal = 1 if date>=20130801&statefip==27;
+replace marlegal = 1 if date>=20130801&statefip==44;
+replace marlegal = 1 if date>=20131021&statefip==34;
+replace marlegal = 1 if date>=20131202&statefip==15;
+replace marlegal = 1 if date>=20131219&statefip==35;
+replace marlegal = 1 if date>=20140519&statefip==41;
+replace marlegal = 1 if date>=20140520&statefip==42;
+replace marlegal = 1 if date>=20140601&statefip==17;
+replace marlegal = 1 if date>=20141006&statefip==18;
+replace marlegal = 1 if date>=20141006&statefip==40;
+replace marlegal = 1 if date>=20141006&statefip==49;
+replace marlegal = 1 if date>=20141006&statefip==51;
+replace marlegal = 1 if date>=20141006&statefip==55;
+replace marlegal = 1 if date>=20141007&statefip==08;
+replace marlegal = 1 if date>=20141009&statefip==32;
+replace marlegal = 1 if date>=20141009&statefip==54;
+replace marlegal = 1 if date>=20141010&statefip==37;
+replace marlegal = 1 if date>=20141015&statefip==16;
+replace marlegal = 1 if date>=20141017&statefip==02;
+replace marlegal = 1 if date>=20141017&statefip==04;
+replace marlegal = 1 if date>=20141021&statefip==56;
+replace marlegal = 1 if date>=20141119&statefip==30;
+replace marlegal = 1 if date>=20141120&statefip==45;
+replace marlegal = 1 if date>=20150106&statefip==12;
+
+
+/*atus respondent's cps line number*/
+gen _resp_line_cps8=lineno_cps8 if lineno==1;
+egen resp_line_cps8=max(_resp_line_cps8),by(caseid);
+/*partner's cps line number*/
+gen _part_line_cps8=lineno_cps8 if pecohab==resp_line_cps8 & relate>=28 & relate<=997;
+egen part_line_cps8=max(_part_line_cps8),by(caseid);
+/*partner's emp at cps8*/
+gen _part_emp_cps8=empstat_cps8 if pecohab==resp_line_cps8;
+egen part_emp_cps8=max(_part_emp_cps8),by(caseid);
+/*partner's relate codes from atus and cps*/
+gen _part_cps_relate=relate_cps8 if part_line_cps8==lineno_cps8;
+egen part_cps_relate=max(_part_cps_relate),by(caseid);
+	label values part_cps_relate relate_cps8_lbl;
+gen _part_atus_relate=relate if part_line_cps8==lineno_cps8;
+egen part_atus_relate=max(_part_atus_relate),by(caseid);
+	label values part_atus_relate relate_lbl;
+
+/*visual check on things*/
+list caseid lineno relate lineno_cps8 pecohab _resp_line_cps8 resp_line_cps8 _part_line_cps8 part_line_cps8 _part_atus_relate part_atus_relate if caseid==20070504071826;
+
+gen _temp=spousepres if spousepres!=99;
+egen spousepres_on_all=max(_temp),by(caseid);
+
+/*so we know how many couples come from atus directly and from cps pointer code*/
+gen _couple_type=.;
+	replace _couple_type=0 if (spousepres_on_all==1 | spousepres_on_all==2) & lineno_cps8==999 & (relate==20 | relate==21);
+
+	replace _couple_type=1 if (spousepres_on_all==1 | spousepres_on_all==2) & lineno_cps8!=999 & (relate==20 | relate==21);
+
+	replace _couple_type=2 if spousepres==3 & part_line_cps8!=. & _couple_type==.;
+
+
+sort caseid lineno;
+
+
+egen couple_type=max(_couple_type),by(caseid);
+
+tab couple_type if lineno==1;
+
+
+gen marr_cohab=spousepres;
+	replace marr_cohab=. if spousepres>=3;
+	replace marr_cohab=2 if couple_type==2; //identify R as having a cohab parter if they're in couple_type=2 (assigned based on PECOHAB) and SPOUSEPRES=3 (not in partnership)
+
+	lab def marr_cohab_lb 1 "married" 2 "cohab";
+	lab values marr_cohab marr_cohab_lb;
+	
+
+
+/*spouse variables--race, educ, emp*/
+gen ispart=0;
+	replace ispart=1 if (relate==20 | relate==21);
+	replace ispart=1 if _part_line_cps8!=. & couple_type==2;
+
+/*couple variables--race, educ, emp*/
+foreach v in age age2 race_red educ_red sex {;
+	gen _sp_`v'=`v' if ispart==1;
+	egen sp_`v'=max(_sp_`v'),by(caseid);
+	};
+
+
+gen sp_employed_red=spempnot if (couple_type==0 | couple_type==1) & lineno==1 & spempnot!=99;
+
+/*here add part_emp_cps8*/
+	replace sp_employed_red=0 if part_emp_cps8>=3 & part_emp_cps8<=7 & couple_type==2;
+	replace sp_employed_red=1 if part_emp_cps8>=1 & part_emp_cps8<=2 & couple_type==2;
+
+gen sp_employed=sp_employed_red;
+
+gen same_sex=(sex==sp_sex);
+
+gen same_sex3=0;
+	replace same_sex3=1 if same_sex==0 ;
+	replace same_sex3=2 if same_sex==1 & sex==1;
+	replace same_sex3=3 if same_sex==1 & sex==2;
+
+	label define samesex3_lb 1 "Hetero";
+	label define samesex3_lb 2 "Same sex men", add;
+	label define samesex3_lb 3 "Same sex women", add;
+	label values same_sex3 samesex3_lb;
+
+
+gen same_sex4=0;
+	replace same_sex4=1 if same_sex==0 & sex==1;
+	replace same_sex4=2 if same_sex==0 & sex==2;
+	replace same_sex4=3 if same_sex==1 & sex==1;
+	replace same_sex4=4 if same_sex==1 & sex==2;
+
+	label define samesex4_lb 1 "Hetero men";
+	label define samesex4_lb 2 "Hetero women", add;
+	label define samesex4_lb 3 "Same sex men", add;
+	label define samesex4_lb 4 "Same sex women", add;
+	label values same_sex4 samesex4_lb;
+
+
+gen race_couple=.;
+	replace race_couple=1 if race_red==1 & sp_race_red==1 ;
+	replace race_couple=2 if ((race_red!=1 & sp_race_red==1) | (race_red == 1 & sp_race_red !=1)) & sp_race_red!=.;
+	replace race_couple=3 if race_red !=1 & sp_race_red !=1 & sp_race_red!=.;
+	label define race_couplel 1 "Both white" 2 "One non white" 3 "Both non-white";
+	label values race_couple race_couplel;
+
+gen educ_couple=.;
+	replace educ_couple=1 if educ_red >=3 & sp_educ_red >=3 & sp_educ_red!=.;
+	replace educ_couple=2 if ((educ_red >=3 & sp_educ_red <3) | (educ_red <3 & sp_educ_red >=3)) & sp_educ_red!=.;
+	replace educ_couple=3 if educ_red <3 & sp_educ_red <3 & sp_educ_red!=.;
+	lab def educ_couplel 1 "Both College" 2 "One College" 3 "Both not college";
+	lab values educ_couple educ_couplel;
+
+gen empstat_couple=.;
+	replace empstat_couple=1 if employed==1 & sp_employed==1;
+	replace empstat_couple=2 if (employed==1 & sp_employed==0) | (employed==0 & sp_employed==1);
+	replace empstat_couple=3 if employed==0 & sp_employed==0 & sp_employed!=. ;
+	lab def empstat_couplel 1 "Both employed" 2 "One employed" 3 "Both not employed";
+	lab values empstat_couple empstat_couplel;
+
+
+tab race_red, gen(drace);
+tab age2, gen(dage2);
+tab educ_red, gen(deduc);
+tab youngest_child2, gen(dychild);
+tab nchild, gen(dnchild);
+tab income, gen(dincome);
+tab region, gen(dregion);
+tab rec_time, gen(drec_time);
+tab marr_cohab, gen(dmarr_cohab);
+tab parents, gen(dparent);
+tab employed, gen(demp);
+tab day_week, gen(dday_week);
+tab holiday, gen(dholiday);
+tab race_couple, gen(drace_couple);
+tab educ_couple, gen(deduc_couple);
+tab empstat_couple, gen(dempstat_couple);
+
+gen imp_race_couple=race_couple;
+gen imp_educ_couple=educ_couple;
+gen imp_empstat_couple=empstat_couple;
+
+save `data'recode_person_pre_drop, replace;
+
+keep if age>=20 & age<70 & lineno==1 & sp_age>=20 & sp_age<70;
+sum sp_* if lineno==1;
+sum *_couple if lineno==1;
+
+save `data'recode_person.dta, replace;
+
+
+/*couple type
+0=moved in between cps & atus
+1=in both atus & cps
+2=pointer method
+*/
+tab sp_race_red couple_type, mi;
+tab sp_educ_red couple_type, mi;
+tab sp_employed_red couple_type, mi;
+
+log close;

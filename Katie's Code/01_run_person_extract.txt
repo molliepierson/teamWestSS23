@@ -1,0 +1,28 @@
+#delimit;
+clear;
+clear matrix;
+set more off;
+capture log close;
+
+local logdate = string( d(`c(current_date)'), "%dN.D.Y" );
+
+log using logs/01_run_extract_hhcomp_`logdate'.log, t replace;
+
+include includes/data_locations.doi;
+
+
+local extract_num 00661;
+
+cap confirm file `data'atus_`extract_num';
+if _rc {;
+	shell gzip -d `data'atus_`extract_num'.dat.gz;
+	};
+
+cd `data';
+do atus_`extract_num'.do;
+
+sort caseid lineno;
+
+save extract_hhcomp.dta, replace;
+
+log close;

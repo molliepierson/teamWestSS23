@@ -1,0 +1,84 @@
+#delimit;
+clear;
+clear matrix;
+set more off;
+capture log close;
+
+
+local logdate = string( d(`c(current_date)'), "%dN.D.Y" );
+
+log using logs/02_run_hier_`logdate'.log, t replace;
+
+include includes/data_locations.doi;
+
+local extract_num 00659;
+
+cap confirm file `data'atus_`extract_num'.dat.gz;
+if !_rc {;
+	shell gzip -d `data'atus_`extract_num'.dat.gz;
+	};
+
+cd `data';
+do atus_`extract_num'.do;
+
+save extract_hier.dta, replace;
+
+keep if rectype==1;
+
+qui foreach v of var * {;
+	count if missing(`v');
+	if r(N) == _N drop `v';
+	};
+
+save extract_h, replace;
+
+
+clear;
+use extract_hier.dta;
+keep if rectype==2;
+
+qui foreach v of var * {;
+	count if missing(`v');
+	if r(N) == _N drop `v';
+	};
+
+save extract_p, replace;
+
+
+clear;
+use extract_hier.dta;
+keep if rectype==3;
+
+qui foreach v of var * {;
+	count if missing(`v');
+	if r(N) == _N drop `v';
+	};
+
+save extract_a, replace;
+
+
+clear;
+use extract_hier.dta;
+keep if rectype==4;
+
+qui foreach v of var * {;
+	count if missing(`v');
+	if r(N) == _N drop `v';
+	};
+
+save extract_w, replace;
+
+
+clear;
+use extract_p;
+merge 1:1 caseid using extract_h;
+save extract_hp, replace;
+
+
+clear;
+use extract_hp;
+drop _merge;
+merge 1:m caseid using extract_a;
+save extract_hpa, replace;
+
+log close;

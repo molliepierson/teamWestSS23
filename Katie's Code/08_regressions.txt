@@ -1,0 +1,145 @@
+#delimit;
+clear;
+clear matrix;
+set more off;
+
+local logdate = string( d(`c(current_date)'), "%dN.D.Y" );
+
+log using logs/08_regression_`logdate'.log, t replace;
+
+include includes/data_locations.doi;
+
+use `data'analysis;
+mi svyset [pweight = wt06];
+
+
+
+local Table2 0;
+local Table3 1;
+
+if `Table2'==1 {;
+	cap confirm file OLS_MI.txt;
+	if !_rc {;
+		rm OLS_MI.txt;
+		};
+
+	foreach var in w_spouse w_sponly {;
+		disp "var is `var' for NON parents";
+			mi estimate, esampvaryok post : svy, subpop(if parents==0): regress `var' dsame_sex32 dsame_sex33 dsex2 dimp_race_couple2 dimp_race_couple3 dimp_educ_couple1 dimp_educ_couple2 dimp_empstat_couple2 dimp_empstat_couple3 dmarr_cohab2 dage22 dage23 dage24 dage25 dincome2 dincome3 dincome4 dincome5 dday_week2 dholiday1 dregion2 dregion3 dregion4 drec_time2 drec_time3;
+
+			outreg2 using "OLS_MI.txt", excel bdec(2) alpha(0.001, 0.01, 0.05) symbol(***, **, *) cttop(`var' par=0) addstat(`e(sample)') e(all) label(insert);
+		};
+
+
+	foreach var in w_spouse w_sponly w_spkid {;
+		disp "var is `var' for parents";
+			mi estimate, esampvaryok post: svy, subpop(if parents==1): regress `var' dsame_sex32 dsame_sex33 dsex2 dimp_race_couple2 dimp_race_couple3 dimp_educ_couple1 dimp_educ_couple2 dimp_empstat_couple2 dimp_empstat_couple3 dmarr_cohab2 dage22 dage23 dage24 dage25 dincome2 dincome3 dincome4 dincome5 dday_week2 dychild2 dychild3 dnchild1 dnchild2 dholiday1 dregion2 dregion3 dregion4 drec_time2 drec_time3;
+
+			outreg2 using "OLS_MI.txt", excel bdec(2) alpha(0.001, 0.01, 0.05) symbol(***, **, *) cttop(`var' par=1) addstat(`e(sample)') e(all) label(insert);
+		};
+	};
+
+
+if `Table3'==1 {;
+	cap confirm file OLS_MI_ACT.txt;
+	if !_rc {;
+		rm OLS_MI_ACT.txt;
+		};
+
+
+	/*activity specific analyses*/
+	foreach n in 1 2 3 4 5 7 10 {;
+		disp "activity is `n' for NON parents";
+			qui mi estimate,  saving(miest, replace) esampvaryok post : svy, subpop(if parents==0): regress total`n' dsame_sex32 dsame_sex33 dsex2 dimp_race_couple2 dimp_race_couple3 dimp_educ_couple1 dimp_educ_couple2 dimp_empstat_couple2 dimp_empstat_couple3 dmarr_cohab2 dage22 dage23 dage24 dage25 dincome2 dincome3 dincome4 dincome5 dday_week2 dholiday1 dregion2 dregion3 dregion4 drec_time2 drec_time3;
+
+			qui outreg2 using "OLS_MI_ACT.txt", excel bdec(2) alpha(0.001, 0.01, 0.05) symbol(***, **, *) cttop(total`n' par=0) addstat(`e(sample)') e(all) label(insert);
+
+			qui mi predict total`n'_par0=predict(mean total`n')using miest;
+
+
+		disp "activity is `n' for NON parents, now with spouse";
+			qui mi estimate, saving(miest, replace) esampvaryok post : svy, subpop(if parents==0): regress spouse`n' dsame_sex32 dsame_sex33 dsex2 dimp_race_couple2 dimp_race_couple3 dimp_educ_couple1 dimp_educ_couple2 dimp_empstat_couple2 dimp_empstat_couple3 dmarr_cohab2 dage22 dage23 dage24 dage25 dincome2 dincome3 dincome4 dincome5 dday_week2 dholiday1 dregion2 dregion3 dregion4 drec_time2 drec_time3;
+
+			qui outreg2 using "OLS_MI_ACT_SP.txt", excel bdec(2) alpha(0.001, 0.01, 0.05) symbol(***, **, *) cttop(spouse`n' par=0) addstat(`e(sample)') e(all) label(insert);
+
+			qui mi predict spouse`n'_par0=predict(mean spouse`n')using miest;
+		};
+
+
+	foreach n in 1 2 3 4 5 7 10 {;
+		disp "activity is `n' for parents";
+			qui mi estimate, saving(miest, replace) esampvaryok post: svy, subpop(if parents==1): regress total`n' dsame_sex32 dsame_sex33 dsex2 dimp_race_couple2 dimp_race_couple3 dimp_educ_couple1 dimp_educ_couple2 dimp_empstat_couple2 dimp_empstat_couple3 dmarr_cohab2 dage22 dage23 dage24 dage25 dincome2 dincome3 dincome4 dincome5 dday_week2 dychild2 dychild3 dnchild1 dnchild2 dholiday1 dregion2 dregion3 dregion4 drec_time2 drec_time3;
+
+			qui outreg2 using "OLS_MI_ACT.txt", excel bdec(2) alpha(0.001, 0.01, 0.05) symbol(***, **, *) cttop(total`n' par=1) addstat(`e(sample)') e(all) label(insert);
+
+			qui mi predict total`n'_par1=predict(mean total`n') using miest;
+
+
+		disp "activity is `n' for parents, now with spouse";
+			qui mi estimate,  saving(miest, replace) esampvaryok post : svy, subpop(if parents==1): regress spouse`n' dsame_sex32 dsame_sex33 dsex2 dimp_race_couple2 dimp_race_couple3 dimp_educ_couple1 dimp_educ_couple2 dimp_empstat_couple2 dimp_empstat_couple3 dmarr_cohab2 dage22 dage23 dage24 dage25 dincome2 dincome3 dincome4 dincome5 dday_week2 dholiday1 dregion2 dregion3 dregion4 drec_time2 drec_time3;
+
+			qui outreg2 using "OLS_MI_ACT_SP.txt", excel bdec(2) alpha(0.001, 0.01, 0.05) symbol(***, **, *) cttop(spouse`n' par=1) addstat(`e(sample)') e(all) label(insert);
+
+			qui mi predict spouse`n'_par1=predict(mean spouse`n') using miest;
+		};
+		
+
+		foreach n in 1 2 3 4 5 7 10 {;
+			mi estimate, vartable: svy, subpop(if parents==0): mean total`n'_par0, over(same_sex3);
+			qui matrix a=e(b_mi);
+			qui matrix list a;
+
+			local est_total`n'_par01=round(a[1,1],000.001); 
+			local est_total`n'_par02=round(a[1,2],000.001); 
+			local est_total`n'_par03=round(a[1,3],000.001); 
+
+
+			mi estimate, vartable: svy, subpop(if parents==0): mean spouse`n'_par0, over(same_sex3);
+			qui matrix a=e(b_mi);
+			qui matrix list a;
+
+			local est_spouse`n'_par01=round(a[1,1],000.001); 
+			local est_spouse`n'_par02=round(a[1,2],000.001); 
+			local est_spouse`n'_par03=round(a[1,3],000.001); 
+			};
+
+
+		foreach n in 1 2 3 4 5 7 10 {;
+			mi estimate, vartable: svy, subpop(if parents==1): mean total`n'_par1, over(same_sex3);
+			qui matrix a=e(b_mi);
+			qui matrix list a;
+
+			local est_total`n'_par11=round(a[1,1],000.001); 
+			local est_total`n'_par12=round(a[1,2],000.001); 
+			local est_total`n'_par13=round(a[1,3],000.001); 
+
+			mi estimate, vartable: svy, subpop(if parents==1): mean spouse`n'_par1, over(same_sex3);
+			qui matrix a=e(b_mi);
+			qui matrix list a;
+
+			local est_spouse`n'_par11=round(a[1,1],000.001); 
+			local est_spouse`n'_par12=round(a[1,2],000.001); 
+			local est_spouse`n'_par13=round(a[1,3],000.001); 
+			};
+
+		quietly {;
+		
+		foreach n in 1 2 3 4 5 7 10 {;
+
+			noisily disp "spouses `n'|`est_spouse`n'_par01'|`est_spouse`n'_par02'|`est_spouse`n'_par03'|`est_spouse`n'_par11'|`est_spouse`n'_par12'|`est_spouse`n'_par13'";
+			noisily disp "totals `n'|`est_total`n'_par01'|`est_total`n'_par02'|`est_total`n'_par03'|`est_total`n'_par11'|`est_total`n'_par12'|`est_total`n'_par13'";
+			};
+		};
+	};
+	
+/*	
+margins same_sex4
+reg total_spouse`X' ib2.same_sex4 ib1.race_couple ib1.educ_couple ib1.empstat_couple i.marr_cohab ib1.youngest_child2 ib3.nchild ib1.income i.day_week i.HOLIDAY i.REGION i.rec_time i.age2  if parents==1 [pweight=weight]
+margins same_sex4
+reg total_activity`X' ib2.same_sex4 ib1.race_couple ib1.educ_couple ib1.empstat_couple i.marr_cohab ib1.income i.day_week i.HOLIDAY i.REGION i.rec_time i.age2   if parents==0 [pweight=weight]
+margins same_sex4
+reg total_activity`X' ib2.same_sex4 ib1.race_couple ib1.educ_couple ib1.empstat_couple i.marr_cohab ib1.youngest_child2 ib3.nchild ib1.income i.day_week i.HOLIDAY i.REGION i.rec_time i.age2  if parents==1 [pweight=weight]
+margins, over (same_sex4)
+}
+*/
+log close;

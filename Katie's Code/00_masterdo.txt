@@ -1,0 +1,13 @@
+#delimit;
+clear;
+clear matrix;
+set more off;
+
+do 01_run_person_extract.txt;
+do 02_run_hier_extract.txt;
+do 03_recode_pvars.txt;
+do 04.imputation.txt;
+do 05_who_vars.txt;
+do 06_act_vars.txt;
+do 07_descriptives.txt;
+do 08_regressions.txt;

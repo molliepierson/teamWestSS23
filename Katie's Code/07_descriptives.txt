@@ -1,0 +1,200 @@
+#delimit;
+clear;
+clear matrix;
+set more off;
+
+/*for help with this see: 
+https://stats.idre.ucla.edu/stata/seminars/mi_in_stata_pt1_new
+*/
+
+
+local logdate = string( d(`c(current_date)'), "%dN.D.Y" );
+
+log using logs/07_descriptives_`logdate'.log, t replace;
+
+include includes/data_locations.doi;
+
+local Table1 1;
+local Table2 1;
+
+local vars drace1 drace2 drace3 
+	dage21 dage22 dage23 dage24 dage25
+	deduc1 deduc2 deduc3
+	dychild1 dychild2 dychild3
+	dnchild1 dnchild2 dnchild3 
+	dincome1 dincome2 dincome3 dincome4 dincome5
+	dregion1 dregion2 dregion3 dregion4
+	drec_time1 drec_time2 drec_time3
+	dmarr_cohab1 dmarr_cohab2
+	dparent1 dparent2
+	demp1 demp2
+	dday_week1 dday_week2
+	dholiday1 dholiday2
+	
+	drace_couple1 drace_couple2 drace_couple3
+	deduc_couple1 deduc_couple2 deduc_couple3
+	dempstat_couple1 dempstat_couple2 dempstat_couple3	
+	
+	dimp_race_couple1 dimp_race_couple2 dimp_race_couple3
+	dimp_educ_couple1 dimp_educ_couple2 dimp_educ_couple3
+	dimp_empstat_couple1 dimp_empstat_couple2 dimp_empstat_couple3
+	
+	dsex1 dsex2
+	marlegal;
+
+
+if `Table1'==1 {;
+	/*1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111*/
+	/*Generate means from imputed data*/
+
+	use `data'analysis;
+	mi svyset [pweight = wt06];
+
+
+	tab same_sex3, gen(dsame_sex3);
+	tab sex, gen(dsex);
+
+	foreach v in `vars' {;
+		cap confirm var `v';
+		if !_rc {;
+			qui mi estimate, vartable: svy: mean `v', over(same_sex3);
+			matrix a=e(b_mi);
+			forvalues n = 1/3 {;
+				local `v'_`n'=round(a[1,`n'],.001); 
+				};
+			};
+		else {;
+			disp "`v' is missing!";
+			};
+		};
+
+	tab same_sex3, matcell(x);
+	forvalues n = 1/3 {;
+		local N`n'=x[`n',1];
+		};
+	tab same_sex3 if marlegal==1, matcell(x);
+	forvalues n = 1/3 {;
+		local Nmar`n'=x[`n',1];
+		};
+	tab same_sex3 if marlegal==0, matcell(x);
+	forvalues n = 1/3 {;
+		local Nnmar`n'=x[`n',1];
+		};
+
+
+
+/*get N's below*/
+
+	/*2222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222*/
+	/*Generate means from non-imputed data just for comparison. This is just to convince us that there's nothing wonky with imputation.*/
+
+	clear;
+	use `data'analysis_no_impute;
+	svyset [weight=wt06];
+
+
+	foreach v in `vars' {;
+		cap confirm var `v';
+		if !_rc {;
+			qui svy: mean `v', over(same_sex3);
+			matrix a=e(b);
+			forvalues n = 1/3 {;
+				local `v'_`n'=round(a[1,`n'],.001); 
+				};
+			};
+		};
+
+	disp "var|hetero|ss men|ss women";
+	foreach v in `vars' {; //hetero, ss men, ss women
+		cap confirm var `v';
+		if !_rc {;
+			disp "`v'|``v'_1'|``v'_2'|``v'_3'";
+			};
+		};
+
+
+	tab same_sex3, matcell(x);
+	forvalues n = 1/3 {;
+		local N`n'=x[`n',1];
+		};
+	tab same_sex3 if marlegal==1, matcell(x);
+	forvalues n = 1/3 {;
+		local Npar`n'=x[`n',1];
+		};
+	tab same_sex3 if marlegal==0, matcell(x);
+	forvalues n = 1/3 {;
+		local Nnpar`n'=x[`n',1];
+		};
+
+		disp "N|`N1'|`N2'|`N3'";
+		disp "Nmar|`Nmar1'|`Nmar2'|`Nmar3'";
+		disp "Nnmar|`Nnmar1'|`Nnmar2'|`Nnmar3'";
+	};
+
+if `Table2'==1 {;
+
+	use `data'analysis;
+	mi svyset [pweight = wt06];
+
+	local tuv_vars w_spouse w_sponly w_spkid total_home total_nothome total_out total_leisure_home total_leisure_nothome total_leisure_out spouse_home spouse_nothome spouse_out spouse_leisure_home spouse_leisure_nothome spouse_leisure_out;
+	
+	foreach v in `tuv_vars' {;
+		cap confirm var `v';
+		if !_rc {;
+			/*qui*/ mi estimate, vartable: svy: mean `v', over(same_sex3 marlegal);
+			matrix a=e(b_mi);
+			matrix list a;
+
+			forvalues n = 1/6 {;
+				local `v'_`n'=round(a[1,`n'],.001); 
+				};
+			};
+		else {;
+			disp "`v' is missing!";
+			};
+
+		};
+
+	disp "var|hetero non-parent|hetero parent|ss men non-parent|ss men parent|ss women non-parent|ss women parent";
+	foreach v in `tuv_vars' {; //hetero, ss men, ss women
+		cap confirm var `v';
+		if !_rc {;
+			disp "`v'|``v'_1'|``v'_2'|``v'_3'|``v'_4'|``v'_5'|``v'_6'";
+			};
+		};
+
+	foreach n in 0 1 {;
+	
+	disp "!!!!!working on marlegal=`n'";
+	
+	foreach v in `tuv_vars' {; //hetero, ss men, ss women
+
+	disp "!!!!!working on variable=`v'";
+
+		/*qui*/ xi: mi estimate, saving(myresults, replace): svy, subpop(if marlegal==`n'): regress `v' i.same_sex3;
+			/*qui*/ mi estimate (diff:_b[_Isame_sex3_2]) using myresults;
+			matrix a=r(table);
+			qui matrix list a;
+			local `v'_test_het_ssm_par`n'=round(a[4,1],.0001); //this is the pvalue
+
+			/*qui*/ mi estimate (diff:_b[_Isame_sex3_3]) using myresults;
+			matrix a=r(table);
+			qui matrix list a;
+			local `v'_test_het_ssw_par`n'=round(a[4,1],.0001); //this is the pvalue
+
+			/*qui*/ mi estimate (diff:_b[_Isame_sex3_2] - _b[_Isame_sex3_3]) using myresults;
+			matrix a=r(table);
+			qui matrix list a;
+			local `v'_test_ssm_ssw_par`n'=round(a[4,1],.0001); //this is the pvalue
+		};
+		};
+
+		disp "var|test hetero vs ssmen|test hetero vs sswomen|ssmen vs sswomen";
+	foreach n in 0 1 {;
+	foreach v in `tuv_vars' {; 
+		disp "`v'_mar`n'|``v'_test_het_ssm_mar`n''|``v'_test_het_ssw_mar`n''|``v'_test_ssm_ssw_mar`n''";
+		};
+		};
+	};
+
+log close;

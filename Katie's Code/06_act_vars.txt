@@ -1,0 +1,93 @@
+
+#delimit;
+clear;
+clear matrix;
+set more off;
+
+local logdate = string( d(`c(current_date)'), "%dN.D.Y" );
+
+log using logs/06_act_vars_`logdate'.log, t replace;
+
+include includes/data_locations.doi;
+
+use `data'create_whos.dta;
+
+merge 1:1 caseid actline using `data'extract_a.dta;
+
+gen act2=0;
+replace act2 = 1 if (activity>=20000&activity<=29999)|(activity>=70000&activity<=109999);
+replace act2 = 2 if (activity >= 30000 & activity <= 30399) | (activity >= 40000 & activity <= 40399) ;
+replace act2 = 3 if activity >= 110000 & activity <= 119999;
+replace act2 = 4 if activity >= 120000 & activity <= 159999 & activity !=120303 ;
+replace act2 = 5 if activity >= 180000 & activity <= 189999 ;
+replace act2 = 6 if (activity >= 30400 & activity <= 39999) | (activity >= 40400 & activity <= 49999)  ;
+replace act2 = 7 if activity==120303 ;
+replace act2 = 8 if activity >= 60000 & activity <= 69999 ;
+replace act2 = 9 if (activity >= 160000 & activity <= 169999) | (activity >= 500000 & activity <= 509999);
+replace act2= 10 if act2==6 | act2==8 | act2==9;
+
+label define  act2lbl 1 "Housework";
+label define  act2lbl 2 "Childcare activities", add;
+label define  act2lbl 3 "Eat", add;
+label define  act2lbl 4 "Leisure", add;
+label define  act2lbl 5 "Travel", add;
+label define  act2lbl 6 "Care adult", add;
+label define  act2lbl 7 "TV", add;
+label define  act2lbl 8 "Education", add;
+label define  act2lbl 9 "Other", add;
+label define  act2lbl 10 "care adult, education, other", add;
+label values act2 act2lbl;
+
+gen act_home = 0;
+replace act_home = 1 if where==0101;
+gen act_nothome = 0;
+replace act_nothome = 1 if where>=0102&act_nothome<=0114;
+gen act_out = 0;
+replace act_out = 1 if where==0104|where==0105|where==0106|where==0107|where==0109|where==0110|where==0112;
+
+gen act_leisure_home = 0;
+replace act_leisure_home = 1 if where==0101&act2==4;
+gen act_leisure_nothome = 0;
+replace act_leisure_nothome = 1 if (where>=0102&act_nothome<=0114)&act2==4;
+gen act_leisure_out = 0;
+replace act_leisure_out = 1 if (where==0104|where==0105|where==0106|where==0107|where==0109|where==0110|where==0112)&act2==4;
+
+foreach x in spouse sponly spkid {;
+	gen _w_`x'=duration if `x'==1;
+	egen w_`x'=sum(_w_`x'),by(caseid);
+	};
+
+foreach x of numlist 1/10 {;
+	gen _total`x'=duration if act2==`x';
+	egen total`x'=sum(_total`x'),by(caseid);
+	gen _spouse`x'=duration if act2==`x' & spouse==1;
+	egen spouse`x'=sum(_spouse`x'),by(caseid);
+	};
+
+foreach x in home nothome out leisure_home leisure_nothome leisure_out {;
+	gen _total`x'=duration if act_`x'==1;
+	egen total_`x'=sum(_total`x'),by(caseid);
+	gen _spouse`x'=duration if act_`x'==1 & spouse==1;
+	egen spouse_`x'=sum(_spouse`x'),by(caseid);
+	};
+
+
+keep if actline==1;
+drop _merge;
+keep caseid actline w_spouse w_sponly w_spkid total1 total2 total3 total4 total5 total6 total7 total8 total9 total10 spouse1 spouse2 spouse3 spouse4 spouse5 spouse6 spouse7 spouse8 spouse9 spouse10
+total_home total_nothome total_out total_leisure_home total_leisure_nothome total_leisure_out spouse_home spouse_nothome spouse_out spouse_leisure_home spouse_leisure_nothome spouse_leisure_out;
+save `data'create_act_vars.dta, replace;
+
+merge 1:m caseid using `data'add_imputed; //1:m because merging with imputed data
+keep if _merge==3;
+drop _merge;
+save `data'analysis.dta, replace;
+
+clear;
+use `data'create_act_vars;
+merge 1:1 caseid using `data'recode_person;
+keep if _merge==3;
+drop _merge;
+save `data'analysis_no_impute.dta, replace;
+
+log close;
