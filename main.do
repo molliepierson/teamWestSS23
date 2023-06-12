@@ -20,6 +20,8 @@ Questions:
 
 use "/Users/mollie/Desktop/Summer Scholars 23/teamWestSS23/data.dta", clear
 
+ use "/Users/kosbab/Documents/GitHub/teamWestSS23/data.dta", clear
+
 
 drop if spousepres == 3  // getting rid of all respondents w/o a spouse or partner in the hh
 
