@@ -4,11 +4,13 @@
 changes to katie's code:
 	renamed age variable
 	changed day_week to a binary for weekend
+		-add a friday/holiday
 	expanded race categories
 	generated bipoc category (includes hispanic)
 	
 Questions:
 	do we want to change education?
+		
 	what age range do we want to limit to?
 	Do we want to add a retired binary
 	should I label dummy variables?
@@ -44,6 +46,7 @@ gen income=9
 gen weekend = 0
 	replace weekend =1 if day==1 | day==7
 	
+	
 /* race categories*/
 gen race_recode=5 if race!=9999
 	replace race_recode=1 if race==100 //white 
@@ -53,6 +56,8 @@ gen race_recode=5 if race!=9999
 	
 	lab def race_lb 1 "white" 2 "black" 3 "ai/an" 4 "asian & pacific islander" 5 "mixed race"
 	lab values race_recode race_lb
+
+	
 	
 /* bipoc */
 gen bipoc = 0
@@ -115,47 +120,6 @@ replace marlegal = 1 if date>=20141119&statefip==30
 replace marlegal = 1 if date>=20141120&statefip==45
 replace marlegal = 1 if date>=20150106&statefip==12
 
-//
-// /*atus respondent's cps line number*/
-// gen _resp_line_cps8=lineno_cps8 if lineno==1
-// egen resp_line_cps8=max(_resp_line_cps8),by(caseid)
-// /*partner's cps line number*/
-// gen _part_line_cps8=lineno_cps8 if pecohab==resp_line_cps8 & relate>=28 & relate<=997
-// egen part_line_cps8=max(_part_line_cps8),by(caseid)
-// /*partner's relate codes from atus and cps*/
-// gen _part_cps_relate=relate_cps8 if part_line_cps8==lineno_cps8
-// egen part_cps_relate=max(_part_cps_relate),by(caseid)
-// 	label values part_cps_relate relate_cps8_lbl
-// gen _part_atus_relate=relate if part_line_cps8==lineno_cps8
-// egen part_atus_relate=max(_part_atus_relate),by(caseid)
-// 	label values part_atus_relate relate_lbl
-//	
-//
-// /* partnering categories*/
-//
-// gen _temp=spousepres if spousepres!=99
-// egen spousepres_on_all=max(_temp),by(caseid)
-//
-// /*so we know how many couples come from atus directly and from cps pointer code*/
-// gen _couple_type=.
-// 	replace _couple_type=0 if (spousepres_on_all==1 | spousepres_on_all==2) & lineno_cps8==999 & (relate==20 | relate==21)
-//
-// 	replace _couple_type=1 if (spousepres_on_all==1 | spousepres_on_all==2) & lineno_cps8!=999 & (relate==20 | relate==21)
-//
-// 	replace _couple_type=2 if spousepres==3 & part_line_cps8!=. & _couple_type==.
-//
-//
-// egen couple_type=max(_couple_type),by(caseid)
-//
-// gen marr_cohab=spousepres
-// 	replace marr_cohab=. if spousepres>=3
-// 	replace marr_cohab=2 if couple_type==2 //identify R as having a cohab parter if they're in couple_type=2 (assigned based on PECOHAB) and SPOUSEPRES=3 (not in partnership)
-
-// 	lab def marr_cohab_lb 1 "married" 2 "cohab"
-// 	lab values marr_cohab marr_cohab_lb
-
-/* couple categories- identifying same sex couples */
-
 gen same_sex=(sex==sp_sex)
 
 gen same_sex3=0;
@@ -174,9 +138,46 @@ gen cohab = 0
 
 	
 /*spouse variables--race, educ, emp*/
-gen ispart=0;
-	replace ispart=1 if (relate==20 | relate==21);
-	replace ispart=1 if _part_line_cps8!=. & couple_type==2;
+
+/*10 year age categories - SPOUSE */
+gen sp_age_recode = 0
+	replace sp_age_recode = 1 if spage<30
+	replace sp_age_recode = 2 if spage>=30 & spage<40
+	replace sp_age_recode = 3 if spage>=40 & spage<50
+	replace sp_age_recode = 4 if spage>=50 & spage<60
+	replace sp_age_recode = 5 if spage>=60
+	
+// 	label define age_lb 1 "Less than 30" 2 "30-39" 3 "40-49" 4 "50-59" 5 "60 and over"
+		label values sp_age_recode age_lb
+
+	
+/* race categories - SPOUSE */
+gen sp_race_recode=5 if sprace!=9999
+	replace sp_race_recode=1 if sprace==100 //white 
+	replace sp_race_recode=2 if sprace==110 //black
+	replace sp_race_recode=3 if sprace==120 //aian
+	replace sp_race_recode=4 if sprace==131 | sprace == 132 //asian & pacific islander
+	
+// 	lab def race_lb 1 "white" 2 "black" 3 "ai/an" 4 "asian & pacific islander" 5 "mixed race"
+	lab values sp_race_recode race_lb
+	
+/* bipoc- SPOUSE */
+gen bipoc = 0
+	replace bipoc = 1 if race != 100
+	replace bipoc = 1 if hispan != 100
+
+/* education - SPOUSE */
+gen sp_educ_recode=3 if sp_educ!=999
+	replace sp_educ_recode=1 if sp_educ<20
+	replace sp_educ_recode=2 if sp_educ>=20 & sp_educ<40
+	
+	lab def edu_lb 1 "less hs" 2 "hs & some coll" 3 "degree +"
+	lab values educ_recode edu_lb
+	
+/* employment - SPOUSE */
+gen employed=0 if empstat!=99
+	replace employed=1 if empstat<=2
+	
 
 /*couple variables--race, educ, emp*/
 foreach v in age age2 race_red educ_red sex {;
