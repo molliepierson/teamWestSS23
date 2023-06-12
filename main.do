@@ -10,7 +10,7 @@ changes to katie's code:
 	
 Questions:
 	do we want to change education?
-		
+	add urban/rural
 	what age range do we want to limit to?
 	Do we want to add a retired binary?
 	should I label dummy variables?
@@ -20,13 +20,14 @@ Questions:
 
 use "/Users/mollie/Desktop/Summer Scholars 23/teamWestSS23/data.dta", clear
 
- use "/Users/kosbab/Documents/GitHub/teamWestSS23/data.dta", clear
+//  use "/Users/kosbab/Documents/GitHub/teamWestSS23/data.dta", clear
 
 
 drop if spousepres == 3  // getting rid of all respondents w/o a spouse or partner in the hh
 
 /*10 year age categories*/
-	* 
+	* age: age of ATUS respondent
+	* recoding age into 10 year categories
 rename age age1 
 
 gen age = 0
@@ -40,6 +41,8 @@ gen age = 0
 		label values age age_lb
 
 /* income */
+	* income: total family income of ATUS respondent 
+	* recoding income into 4 categories + missing
 gen income=9
 	replace income=1 if famincome <= 7
 	replace income=2 if famincome >=8 & famincome<=13
@@ -50,12 +53,14 @@ gen income=9
 	lab values income inc_lb
 
 /* week & weekend */
+	*weekend: binary of day surveyed, on if sat or sun
 gen weekend = 0
 	replace weekend =1 if day==1 | day==7
 	
 	
 /* race categories*/
-
+	*race: race of ATUS respondent
+	*recode of race
 rename race race1
 
 gen race=5 if race1!=9999
@@ -69,8 +74,8 @@ gen race=5 if race1!=9999
 	lab values race race_lb
 
 	
-	
 /* bipoc */
+	*bipoc: binary of race, on if respondent is non-white or hispanic
 gen bipoc = 0
 	replace bipoc = 1 if race != 1
 	replace bipoc = 1 if hispan != 100
@@ -78,14 +83,19 @@ gen bipoc = 0
 	lab values bipoc bipoc_lb
 
 /* education */
+	*education: education of ATUS respondents
+	*education recode into categories
 gen education=3 if educ!=999
 	replace education=1 if educ<20
-	replace education=2 if educ>=20 & educ<40
+	replace education=2 if educ>=20 & educ<40 ***********
+	
+	// 20: ged, 21: diploma
 	
 	lab def edu_lb 1 "less hs" 2 "hs & some coll" 3 "degree +"
 	lab values education edu_lb
 	
 /* employment */
+	*employed: binary for employment status of ATUS respondent
 gen employed=0 if empstat!=99
 	replace employed=1 if empstat<=2
 	
@@ -133,9 +143,13 @@ replace marlegal = 1 if date>=20141119&statefip==30
 replace marlegal = 1 if date>=20141120&statefip==45
 replace marlegal = 1 if date>=20150106&statefip==12
 
+
+/* same sex coding*/
+	*same_sex: binary for ss, on if in a ss partnership
 gen same_sex=(sex==spsex)
 
 gen same_sex3=0
+	*same_sex3: categorical for partnership type
 	replace same_sex3=1 if same_sex==0 
 	replace same_sex3=2 if same_sex==1 & sex==1
 	replace same_sex3=3 if same_sex==1 & sex==2
@@ -146,6 +160,7 @@ gen same_sex3=0
 	label values same_sex3 samesex3_lb
 	
 /* cohab dummy */
+	*cohab: binary for partnership type, on if a unmarried partner is present 
 gen cohab = 0
 	replace cohab = 1 if spousepres == 2
 
@@ -171,7 +186,6 @@ gen sp_race=5 if sprace!=9998
 	replace sp_race=3 if sprace==120 //aian
 	replace sp_race=4 if sprace==131 | sprace == 132 //asian & pacific islander
 	
-// 	lab def race_lb 1 "white" 2 "black" 3 "ai/an" 4 "asian & pacific islander" 5 "mixed race"
 	lab values sp_race race_lb
 	
 /* bipoc- SPOUSE */
@@ -206,6 +220,7 @@ gen race_couple=.
 	replace race_couple=3 if race !=1 & sp_race!=1 & sp_race!=.
 	label define race_couple_lb 1 "Both white" 2 "One non white" 3 "Both non-white"
 	label values race_couple race_couple_lb
+	
 	
 	
 order region statefip date weekend marst income sex age race bipoc education employed marlegal same_sex sp_age sp_race sp_bipoc sp_education sp_employed race_couple
