@@ -38,12 +38,19 @@ gen age = 0
 	replace age = 5 if age1>=60
 	
 	label define age_lb 1 "Less than 30" 2 "30-39" 3 "40-49" 4 "50-59" 5 "60 and over"
-		label values age age_lb
+		label values age age_lb	
 
+		
+		
+		
 /* income */
 	* income: total family income of ATUS respondent 
 	* recoding income into 4 categories + missing
-gen income=9
+gen income=0 
+	replace income = . if famincome ==9  
+	replace income = . if famincome ==996 
+	replace income = . if famincome ==997 
+	replace income = . if famincome == 998
 	replace income=1 if famincome <= 7
 	replace income=2 if famincome >=8 & famincome<=13
 	replace income=3 if famincome >=14 & famincome <=15
@@ -87,7 +94,8 @@ gen bipoc = 0
 	*education recode into categories
 gen education=3 if educ!=999
 	replace education=1 if educ<20
-	replace education=2 if educ>=20 & educ<40 ***********
+// TODO:	REVIEW
+	replace education=2 if educ>=20 & educ<40 
 	
 	// 20: ged, 21: diploma
 	
@@ -190,7 +198,7 @@ gen sp_race=5 if sprace!=9998
 	
 /* bipoc- SPOUSE */
 gen sp_bipoc = 0 if sp_race != . & sphispan != 9998
-	replace sp_bipoc = 1 if sprace != 1 & sp_race != .
+	replace sp_bipoc = 1 if sprace != 100 & sp_race != .
 	replace sp_bipoc = 1 if sphispan != 100 & sphispan != 9998 
 	lab values sp_bipoc bipoc_lb
 
@@ -204,30 +212,83 @@ gen sp_education=3 if speduc!=998
 gen sp_employed=0 if spempstat!=99
 	replace sp_employed=1 if spempstat<=2
 	
-
-/*couple variables--race, educ, emp*/
-foreach v in age sp_age race sp_race education sp_education sex spsex {
-// 	gen _sp_`v'=`v'
-	egen co_`v'=max(`v'),by(caseid)
-	}
+//
+// /*couple variables--race, educ, emp*/
+// foreach v in age sp_age race sp_race education sp_education sex spsex {
+// // 	gen _sp_`v'=`v'
+// 	egen co_`v'=max(`v'),by(caseid)
+// 	}
 	
 
 /* Couple Categories */
-
 gen race_couple=.
-	replace race_couple=1 if race==1 & sp_race==1 
-	replace race_couple=2 if ((race!=1 & sp_race==1) | (race == 1 & sp_race !=1)) & sp_race!=.
-	replace race_couple=3 if race !=1 & sp_race!=1 & sp_race!=.
-	label define race_couple_lb 1 "Both white" 2 "One non white" 3 "Both non-white"
+	replace race_couple=0 if race==1 & sp_race==1 
+	replace race_couple=1 if ((race!=1 & sp_race==1) | (race == 1 & sp_race !=1)) & sp_race!=.
+	replace race_couple=1 if race !=1 & sp_race!=1 & sp_race!=.
+	label define race_couple_lb 0 "Both white" 1 "At least one non white" 
+// 	3 "Both non-white"
 	label values race_couple race_couple_lb
 	
 	
+/* couple employment*/
+gen co_employed = 0
+	replace co_employed = 1 if employed == 0 & sp_employed ==0
+	replace co_employed = 2 if employed == 1 & sp_employed == 0
+	replace co_employed = 2 if employed == 0 & sp_employed == 1
+	replace co_employed = 3 if employed == 1 & sp_employed == 1
+
+	label define co_employ_lb 1 "Neither Employed" 2 "One Employed" 3 "Both Employed"
+	label values co_employed co_employ_lb
+	
+	
+/* couple bipoc*/
+gen co_bipoc = 0 
+	replace co_bipoc =1 if bipoc == 1 | sp_bipoc ==1 
+	
+	
+	
+* loop for max age of couple *
+gen co_age = .
+
+if age1 >= spage {
+	replace co_age = age1
+}
+
+else if age1 < spage {
+	replace co_age = spage
+}
 	
 order region statefip date weekend marst income sex age race bipoc education employed marlegal same_sex sp_age sp_race sp_bipoc sp_education sp_employed race_couple
  
+ 
+rename same_sex3 partnership_type3
 
-	
-	
+gen co_education = 0
+replace co_education = 1 if educ >= 31
+replace co_education = 1 if speduc >= 31
+
+gen kidund5 = 0
+replace kidund5 = 1 if kidund1 == 1
+replace kidund5 = 1 if kid1to2 == 1
+replace kidund5 = 1 if kid3to5 == 1
+
+gen inc1 = 0 if famincome !=9 | famincome !=996 | famincome !=997 | famincome != 998
+replace inc1 = 1 if income == 1	
+
+gen inc2 = 0 if famincome !=9 | famincome !=996 | famincome !=997 | famincome != 998
+replace inc2 = 1 if income == 2	
+
+gen inc3 = 0 if famincome !=9 | famincome !=996 | famincome !=997 | famincome != 998
+replace inc3 = 1 if income == 3
+
+gen inc4 = 0 if famincome !=9 | famincome !=996 | famincome !=997 | famincome != 998
+replace inc4 = 1 if income == 4	
+// 
+//  foreach v in age race education {
+//  	summarize `v'
+//  }
+//	
+//	
 	
 	
 	
