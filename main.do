@@ -113,43 +113,43 @@ gen employed=0 if empstat!=99
 
 gen marlegal = 0
 replace marlegal = 1 if date>=20150627
-replace marlegal = 1 if date>=20040517&statefip==25
-replace marlegal = 1 if date>=20080616&date<=20081105&statefip==6
-replace marlegal = 1 if date>=20081112&statefip==9
-replace marlegal = 1 if date>=20090427&statefip==19
-replace marlegal = 1 if date>=20090902&statefip==50
-replace marlegal = 1 if date>=20100101&statefip==33
-replace marlegal = 1 if date>=20100309&statefip==11
-replace marlegal = 1 if date>=20110724&statefip==36
-replace marlegal = 1 if date>=20121206&statefip==53
-replace marlegal = 1 if date>=20121229&statefip==23
-replace marlegal = 1 if date>=20130101&statefip==24
-replace marlegal = 1 if date>=20130628&statefip==6
-replace marlegal = 1 if date>=20130701&statefip==10
-replace marlegal = 1 if date>=20130801&statefip==27
-replace marlegal = 1 if date>=20130801&statefip==44
-replace marlegal = 1 if date>=20131021&statefip==34
-replace marlegal = 1 if date>=20131202&statefip==15
-replace marlegal = 1 if date>=20131219&statefip==35
-replace marlegal = 1 if date>=20140519&statefip==41
-replace marlegal = 1 if date>=20140520&statefip==42
-replace marlegal = 1 if date>=20140601&statefip==17
-replace marlegal = 1 if date>=20141006&statefip==18
-replace marlegal = 1 if date>=20141006&statefip==40
-replace marlegal = 1 if date>=20141006&statefip==49
-replace marlegal = 1 if date>=20141006&statefip==51
-replace marlegal = 1 if date>=20141006&statefip==55
-replace marlegal = 1 if date>=20141007&statefip==08
-replace marlegal = 1 if date>=20141009&statefip==32
-replace marlegal = 1 if date>=20141009&statefip==54
-replace marlegal = 1 if date>=20141010&statefip==37
-replace marlegal = 1 if date>=20141015&statefip==16
-replace marlegal = 1 if date>=20141017&statefip==02
-replace marlegal = 1 if date>=20141017&statefip==04
-replace marlegal = 1 if date>=20141021&statefip==56
-replace marlegal = 1 if date>=20141119&statefip==30
-replace marlegal = 1 if date>=20141120&statefip==45
-replace marlegal = 1 if date>=20150106&statefip==12
+// replace marlegal = 1 if date>=20040517&statefip==25
+// replace marlegal = 1 if date>=20080616&date<=20081105&statefip==6
+// replace marlegal = 1 if date>=20081112&statefip==9
+// replace marlegal = 1 if date>=20090427&statefip==19
+// replace marlegal = 1 if date>=20090902&statefip==50
+// replace marlegal = 1 if date>=20100101&statefip==33
+// replace marlegal = 1 if date>=20100309&statefip==11
+// replace marlegal = 1 if date>=20110724&statefip==36
+// replace marlegal = 1 if date>=20121206&statefip==53
+// replace marlegal = 1 if date>=20121229&statefip==23
+// replace marlegal = 1 if date>=20130101&statefip==24
+// replace marlegal = 1 if date>=20130628&statefip==6
+// replace marlegal = 1 if date>=20130701&statefip==10
+// replace marlegal = 1 if date>=20130801&statefip==27
+// replace marlegal = 1 if date>=20130801&statefip==44
+// replace marlegal = 1 if date>=20131021&statefip==34
+// replace marlegal = 1 if date>=20131202&statefip==15
+// replace marlegal = 1 if date>=20131219&statefip==35
+// replace marlegal = 1 if date>=20140519&statefip==41
+// replace marlegal = 1 if date>=20140520&statefip==42
+// replace marlegal = 1 if date>=20140601&statefip==17
+// replace marlegal = 1 if date>=20141006&statefip==18
+// replace marlegal = 1 if date>=20141006&statefip==40
+// replace marlegal = 1 if date>=20141006&statefip==49
+// replace marlegal = 1 if date>=20141006&statefip==51
+// replace marlegal = 1 if date>=20141006&statefip==55
+// replace marlegal = 1 if date>=20141007&statefip==08
+// replace marlegal = 1 if date>=20141009&statefip==32
+// replace marlegal = 1 if date>=20141009&statefip==54
+// replace marlegal = 1 if date>=20141010&statefip==37
+// replace marlegal = 1 if date>=20141015&statefip==16
+// replace marlegal = 1 if date>=20141017&statefip==02
+// replace marlegal = 1 if date>=20141017&statefip==04
+// replace marlegal = 1 if date>=20141021&statefip==56
+// replace marlegal = 1 if date>=20141119&statefip==30
+// replace marlegal = 1 if date>=20141120&statefip==45
+// replace marlegal = 1 if date>=20150106&statefip==12
 
 
 /* same sex coding*/
@@ -283,24 +283,34 @@ replace inc3 = 1 if income == 3
 
 gen inc4 = 0 if famincome !=9 | famincome !=996 | famincome !=997 | famincome != 998
 replace inc4 = 1 if income == 4	
-// 
-//  foreach v in age race education {
-//  	summarize `v'
-//  }
-//	
-//	
+
+
+gen age2 = co_age*co_age
+
+
+
+
+gen marlegal_samesex = 0
+replace marlegal_samesex = 1 if marlegal == 1 & same_sex == 1 
+
+// TIME USE VARS
+
+gen hhact_pk_or_sk = hhact_pk_merge + hhact_sk_merge
+
+gen hhcare_pk_or_sk = hhcare_pk_merge + hhcare_sk_merge
+
+gen religion_pk_or_sk = religion_pk_merge + religion_sk_merge
+
+gen social_pk_or_sk = social_pk_merge + social_sk_merge
+
+gen sports_pk_or_sk = sports_pk_merge + sports_sk_merge
+
+drop hhact_pk_merge hhact_sk_merge hhcare_pk_merge hhcare_sk_merge religion_pk_merge religion_sk_merge social_pk_merge social_sk_merge sports_pk_merge sports_sk_merge
+
+drop if age1 > 65
+drop if age1 < 18	
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+gen leisure = social_spk_ + sports_spk_
 	
 	
 	

@@ -106,4 +106,4 @@ sum inc4 if partnership_type3 == 2 & spousepres == 2 //SS M COHAB
 sum inc4 if partnership_type3 == 2 & spousepres == 1 //SS M MARRIED
 
 sum inc4
-
+ 
